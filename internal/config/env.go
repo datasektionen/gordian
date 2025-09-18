@@ -8,8 +8,8 @@ type EnvVar struct {
 	LoginAPIURL            string
 	LoginFrontendURL       string
 	LoginToken             string
-	PlsURL                 string
-	PlsSystem              string
+	HiveURL                string
+	HiveToken              string
 	ServerPort             string
 	ServerURL              string
 }
@@ -23,8 +23,8 @@ func GetEnv() EnvVar {
 		LoginAPIURL:            os.Getenv("LOGIN_API_URL"),
 		LoginFrontendURL:       os.Getenv("LOGIN_FRONTEND_URL"),
 		LoginToken:             os.Getenv("LOGIN_TOKEN"),
-		PlsURL:                 os.Getenv("PLS_URL"),
-		PlsSystem:              os.Getenv("PLS_SYSTEM"),
+		HiveURL:                os.Getenv("HIVE_URL"),
+		HiveToken:              os.Getenv("HIVE_TOKEN"),
 		ServerPort:             os.Getenv("SERVER_PORT"),
 		ServerURL:              os.Getenv("SERVER_URL"),
 
@@ -32,11 +32,11 @@ func GetEnv() EnvVar {
 		// PsqlconnStringGOrdian:  "host=localhost port=5432 user=alexander password=kopis dbname=budget_local sslmode=disable",
 		// PsqlconnStringCashflow: "host=localhost port=54321 user=cashflow password=cashflow dbname=cashflow sslmode=disable",
 		// LoginURL:               "https://login.datasektionen.se",
-		// PlsURL:                 "https://pls.datasektionen.se",
-		// PlsSystem:              "gordian",
+		// LoginToken:             "this is secret fuck you",
+		// HiveURL:                "https://hive.datasektionen.se/api/v1",
+		// HiveToken:           	"this is secret fuck you",
 		// ServerPort:             "3000",
 		// ServerURL:              "http://localhost:3000",
-		// LoginToken:             "this is secret fuck you",
 	}
 
 	return envConfig

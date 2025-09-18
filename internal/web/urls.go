@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log/slog"
 	"math/rand"
 	"net/http"
@@ -99,6 +100,7 @@ func authRoute(databases Databases, handler func(w http.ResponseWriter, r *http.
 		if err != nil {
 			return fmt.Errorf("no response from login: %v", err)
 		}
+		defer loginUser.Body.Close()
 
 		if loginUser.StatusCode != 200 {
 			return handler(w, r, databases, []string{}, false)
@@ -110,13 +112,19 @@ func authRoute(databases Databases, handler func(w http.ResponseWriter, r *http.
 		if err != nil {
 			return fmt.Errorf("failed to decode user body from json: %v", err)
 		}
-		userPerms, err := http.Get(config.GetEnv().PlsURL + "/api/user/" + loginBody.User + "/" + config.GetEnv().PlsSystem)
-		if err != nil {
-			return fmt.Errorf("no response from pls: %v", err)
-		}
 
-		var perms []string
-		err = json.NewDecoder(userPerms.Body).Decode(&perms)
+		req, err := http.NewRequest("GET", config.GetEnv().HiveURL+"/user/"+loginBody.User+"/permissions", nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request for hive: %v", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+ config.GetEnv().HiveToken)
+		userPerms, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("no response from hive: %v", err)
+		}
+		defer userPerms.Body.Close()
+
+		perms, err := decodePerms(userPerms.Body)
 		if err != nil {
 			return fmt.Errorf("failed to decode perms body from json: %v", err)
 		}
@@ -129,7 +137,24 @@ func authRoute(databases Databases, handler func(w http.ResponseWriter, r *http.
 		}
 		return handler(w, r, databases, perms, true)
 	})
+}
 
+func decodePerms(respBody io.Reader) ([]string, error) {
+	type permObj struct {
+		ID string `json:"id"`
+	}
+
+	var permObjs []permObj
+	err := json.NewDecoder(respBody).Decode(&permObjs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode perms body from json: %v", err)
+	}
+
+	perms := make([]string, len(permObjs))
+	for i, p := range permObjs {
+		perms[i] = p.ID
+	}
+	return perms, nil
 }
 
 func sliceContains(list1 []string, list2 ...string) bool {

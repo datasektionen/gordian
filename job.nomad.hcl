@@ -37,11 +37,11 @@ SERVER_URL=https://budget.datasektionen.se
 GO_CONN=postgres://gordian:{{ .db_password }}@postgres.dsekt.internal:5432/gordian?sslmode=disable
 CF_CONN=postgres://gordian:{{ .db_password }}@postgres.dsekt.internal:5432/cashflow?sslmode=disable # cursed, should use API
 LOGIN_TOKEN={{ .login_token }}
+HIVE_TOKEN={{ .hive_token }}
 {{ end }}
 LOGIN_API_URL=http://sso.nomad.dsekt.internal/legacyapi
 LOGIN_FRONTEND_URL=https://sso.datasektionen.se/legacyapi
-PLS_URL=https://pls.datasektionen.se
-PLS_SYSTEM=gordian
+HIVE_URL=https://hive.datasektionen.se/api/v1
 ENV
         destination = "local/.env"
         env         = true
