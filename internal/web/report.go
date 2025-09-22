@@ -203,9 +203,15 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 
 		secCostCentre := findOrAddSecondaryCostCentre(&costCentre.SecondaryCostCentresList, line.CashflowLineSecondaryCostCentre)
 
+		// Convert the total to ensure consistent formatting
+		formattedTotal, err := strconv.ParseFloat(strings.Replace(line.CashflowLineTotal, ",", ".", 1), 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse cashflow total: %v", err)
+		}
+
 		secCostCentre.BudgetLinesList = append(secCostCentre.BudgetLinesList, ReportBudgetLine{
 			BudgetLineName: line.CashflowLineBudgetLine,
-			Total:          line.CashflowLineTotal,
+			Total:          formatNumber(formattedTotal),
 		})
 
 		var err1, err2 error
@@ -353,6 +359,10 @@ func addTotals(total1, total2 string) (string, error) {
 		total2 = "0"
 	}
 
+	// Convert commas back to periods for parsing
+	total1 = strings.Replace(total1, ",", ".", 1)
+	total2 = strings.Replace(total2, ",", ".", 1)
+
 	t1, err1 := strconv.ParseFloat(total1, 64)
 	t2, err2 := strconv.ParseFloat(total2, 64)
 
@@ -366,6 +376,9 @@ func addTotals(total1, total2 string) (string, error) {
 
 func makePositive(value string) string {
 	value = strings.TrimSpace(value)
+
+	// Convert comma back to period for parsing
+	value = strings.Replace(value, ",", ".", 1)
 
 	parsed, err := strconv.ParseFloat(value, 64)
 	if err != nil {
@@ -384,5 +397,6 @@ func formatNumber(value float64) string {
 	if value == float64(int(value)) {
 		return fmt.Sprintf("%d", int(value))
 	}
-	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", value), "0"), ".")
+	formatted := strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", value), "0"), ".")
+	return strings.Replace(formatted, ".", ",", 1)
 }
