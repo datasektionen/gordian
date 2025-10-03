@@ -2,9 +2,9 @@ package web
 
 var CombinedCashflowLinesGetStatementStatic = `
     SELECT 
-        cost_centre, 
-        secondary_cost_centre, 
-        budget_line, 
+        UPPER(cost_centre) AS cost_centre, 
+        UPPER(secondary_cost_centre) AS secondary_cost_centre, 
+        UPPER(budget_line) AS budget_line, 
         SUM(amount) AS total_amount
     FROM (
     SELECT 
@@ -28,13 +28,13 @@ var CombinedCashflowLinesGetStatementStatic = `
     INNER JOIN invoices_invoice AS i ON ip.invoice_id = i.id
     ) AS combined
     WHERE (COALESCE($1, '') = '' OR $1 = 'Alla' OR date = $1)  -- Filter by year or allow 'Alla' as wildcard
-      AND (COALESCE($2, '') = '' OR $2 = 'Alla' OR cost_centre::text = $2)  -- Filter by cost_centre or allow 'Alla' as wildcard
-    GROUP BY cost_centre, secondary_cost_centre, budget_line
-    ORDER BY cost_centre, secondary_cost_centre, budget_line;
+      AND (COALESCE($2, '') = '' OR $2 = 'Alla' OR UPPER(cost_centre) = UPPER($2))  -- Filter by cost_centre or allow 'Alla' as wildcard
+    GROUP BY UPPER(cost_centre), UPPER(secondary_cost_centre), UPPER(budget_line)
+    ORDER BY UPPER(cost_centre), UPPER(secondary_cost_centre), UPPER(budget_line);
 `
 
 var uniqueCCGetStatementStatic = `
-	SELECT DISTINCT cost_centre
+	SELECT DISTINCT UPPER(cost_centre) AS cost_centre
 	FROM (
 		SELECT 
 			ep.cost_centre
@@ -46,7 +46,7 @@ var uniqueCCGetStatementStatic = `
 		FROM invoices_invoicepart AS ip
 		INNER JOIN invoices_invoice AS i ON ip.invoice_id = i.id
 	) AS combined
-	ORDER BY cost_centre;
+	ORDER BY UPPER(cost_centre);
 	`
 
 // var ReportLinesByYearAllCCGetStatementStatic = `

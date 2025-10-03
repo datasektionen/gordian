@@ -58,7 +58,7 @@ func getYearsSince2017() []string {
 func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error {
 
 	currentYear := strconv.Itoa(time.Now().Year())
-	//currentYear := "2024"
+	// currentYear := "2024"
 
 	selectedYear := r.FormValue("year")
 	if selectedYear == "" {
@@ -194,7 +194,7 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 	var costCentres []ReportCostCentreLine
 
 	currentYear := strconv.Itoa(time.Now().Year())
-	//currentYear := "2024"
+	// currentYear := "2024"
 
 	// Process CashflowLines
 	for _, line := range cashflowLines {
@@ -229,9 +229,9 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 
 		existsInCashflow := false
 		for _, cashflowLine := range cashflowLines {
-			if cashflowLine.CashflowLineCostCentre == budgetLine.BudgetLineCostCentreName &&
-				cashflowLine.CashflowLineSecondaryCostCentre == budgetLine.BudgetLineSecondaryCostCentreName &&
-				cashflowLine.CashflowLineBudgetLine == budgetLine.BudgetLineName {
+			if strings.EqualFold(cashflowLine.CashflowLineCostCentre, budgetLine.BudgetLineCostCentreName) &&
+				strings.EqualFold(cashflowLine.CashflowLineSecondaryCostCentre, budgetLine.BudgetLineSecondaryCostCentreName) &&
+				strings.EqualFold(cashflowLine.CashflowLineBudgetLine, budgetLine.BudgetLineName) {
 				existsInCashflow = true
 				break
 			}
@@ -306,16 +306,16 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 func getSimpleBudgetLines(db *sql.DB) ([]SimpleBudgetLine, error) {
 	var query = `
 		SELECT 
-			cost_centres.name,
-			secondary_cost_centres.name,
-			budget_lines.name,
+			UPPER(cost_centres.name),
+			UPPER(secondary_cost_centres.name),
+			UPPER(budget_lines.name),
 			budget_lines.expense
 		FROM budget_lines
 		JOIN secondary_cost_centres 
 			ON budget_lines.secondary_cost_centre_id = secondary_cost_centres.id
 		JOIN cost_centres 
 			ON secondary_cost_centres.cost_centre_id = cost_centres.id
-		ORDER BY cost_centres.name, secondary_cost_centres.name, budget_lines.name
+		ORDER BY UPPER(cost_centres.name), UPPER(secondary_cost_centres.name), UPPER(budget_lines.name)
 	`
 	rows, err := db.Query(query)
 	if err != nil {
