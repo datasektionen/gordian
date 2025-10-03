@@ -1,204 +1,250 @@
 @import url(https://fonts.googleapis.com/css?family=Lato:400,300,700,400italic,700italic,900);
 
 h1 {
-    text-align: center;
-    padding-top: 20px; 
+  text-align: center;
+  padding-top: 20px;
 }
 
 #content table td {
-    white-space: wrap; 
-    color:black;
-    text-align: right;
+  white-space: wrap;
+  color: black;
+  text-align: right;
 }
 
 #content table th {
-    color: #333;
- }
- 
+  color: #333;
+}
+
 #content table tr:first-child th,
 #content table tr:first-child td {
-    font-size: 15pt;
+  font-size: 15pt;
 }
 
- #content table tr th:first-child {
-    text-align: left;
- }
+#content table tr th:first-child {
+  text-align: left;
+}
 
- #content table tr td:first-child {
-    text-align: left;
-    color: black;
- }
- 
- #content table tr th,
- #content table tr td {
-     text-align: right;
- }
+#content table tr td:first-child {
+  text-align: left;
+  color: black;
+}
+
+#content table tr th,
+#content table tr td {
+  text-align: right;
+}
 
 #costCentreNames {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    padding-left: 40px;
-    padding-right: 40px;
-    padding-bottom: 100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding-left: 40px;
+  padding-right: 40px;
+  padding-bottom: 100px;
 }
 
-#costCentreNames a { 
-    text-align: center;
-    color:green;
-    display: block;
+#costCentreNames a {
+  text-align: center;
+  color: green;
+  display: block;
 }
 
 #costCentreNames a:hover {
-    font-weight: bold;
+  font-weight: bold;
 }
 
-#costCentreNames >div {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
+#costCentreNames > div {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
 }
 
 #costCentre {
-    padding-bottom: 100px;
+  padding-bottom: 100px;
 }
 
 #costCentre div {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
 }
 
 #costCentre table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 5px;
-    padding: 2em;
-    transition: none;
-    white-space: nowrap;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 5px;
+  padding: 2em;
+  transition: none;
+  white-space: nowrap;
 }
 
 #costCentre table th {
-    text-align: right;
-    width: 3em;
-    padding: 8px;
-    font-size: 13pt;
-    transition: none;
+  text-align: right;
+  width: 3em;
+  padding: 8px;
+  font-size: 13pt;
+  transition: none;
+}
+
+#costCentre table th:first-child {
+  max-width: 200px;
+  text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+#costCentre table td:first-child {
+  max-width: 200px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 #costCentre table td {
-    text-align: right;
-    padding: 5px;
-    font-size: 12pt;
-    transition: none;
-    border-bottom: 1px solid #d6d9db;
-    color: black;
+  text-align: right;
+  padding: 5px;
+  font-size: 12pt;
+  transition: none;
+  border-bottom: 1px solid #d6d9db;
+  color: black;
 }
 
 #costCentre tbody tr:hover {
-    transition: none; /* Jävla Aurora */
-    background-color: rgb(220, 220, 220) !important;
+  transition: none; /* Jävla Aurora */
+  background-color: rgb(220, 220, 220) !important;
 }
 
 #costCentre table tr:nth-child(even) {
-    background-color: #f2f2f2;
+  background-color: #f2f2f2;
 }
 
-#costCentre tbody tr{
-    transition: none; /* Jävla Aurora */
+#costCentre tbody tr {
+  transition: none; /* Jävla Aurora */
 }
 
+@media screen and (max-width: 1020px) {
+  #costCentreNames {
+    display: flex;
+    flex-direction: column;
+  }
 
-@media screen and (max-width: 600px) {
-    .hide-on-mobile {
-        display: none;
-    }
-    
+  .btn-group ul {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-group button {
+    display: inline-block;
+    font-size: 15px;
+    padding: 10px 3px;
+    width: 45vw;
+  }
 }
 
 @media screen and (max-width: 900px) {
-    .hide-on-half-desktop {
-        display: none;
-    }
-
-    .page-title h1 {
-        font-size: 38px !important;
-    }
-
+  .hide-on-half-desktop {
+    display: none;
+  }
 }
 
+@media screen and (max-width: 600px) {
+  .hide-on-mobile {
+    display: none;
+  }
 
-@media screen and (max-width: 1020px) {
-
-    #costCentreNames {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .btn-group ul {
-        grid-template-columns: 1fr;
-    }
-
-    .btn-group button {
-        display: inline-block;
-        font-size: 15px;
-        padding: 10px 3px;
-        width: 45vw;
+  .page-title h1 {
+    font-size: 34px !important;
+  }
 }
 
-}
+@media screen and (max-width: 450px) {
+  .hide-on-tiny-mobile {
+    display: none;
+  }
 
+  .page-title h1 {
+    font-size: 27px !important;
+  }
+}
 
 .btn-group button {
-    background-color: #d4d4d4;
-    color: rgb(0, 0, 0);
-    border-radius: 10px;
-    margin: 5px;
-    cursor: pointer; 
+  background-color: #d4d4d4;
+  color: rgb(0, 0, 0);
+  border-radius: 10px;
+  margin: 5px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.centering { 
-    display:flex; 
-    justify-content: center;
+.centering {
+  text-align: center;
+}
+
+form.centering {
+  flex-direction: row;
+  align-items: center;
+  gap: 15px;
+}
+
+form.centering select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+form.centering button {
+  padding: 8px 16px;
+  background-color: #78909c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+form.centering button:hover {
+  background-color: #607d8b;
 }
 
 .costCentre-group div {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-   /* background-color: lightgreen;*/
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* background-color: lightgreen;*/
 }
 
 .cost-left {
-    text-align: left !important;
+  text-align: left !important;
 }
 
-div.page-title { 
-    background-color: #78909C !important; 
-    color: white; 
-    padding-top: 35px;
-    padding-bottom: 15px;
+div.page-title {
+  background-color: #78909c !important;
+  color: white;
+  padding-top: 35px;
+  padding-bottom: 15px;
 }
 .page-title h1 {
-    font-weight: bolder; 
-    font-size: 42px;
+  font-weight: bolder;
+  font-size: 42px;
 }
 
 .footer-toolbar {
-    align-items: center; 
-    text-align: center;
+  align-items: center;
+  text-align: center;
 }
 
 .positive {
-    color: #4CAF50 !important;
+  color: #4caf50 !important;
 }
 
 .negative {
-   color: #E57373 !important;
+  color: #e57373 !important;
 }
 
 .net {
-    color: black !important;
+  color: black !important;
 }
 
 th.net {
-    color: #333;
+  color: #333;
 }

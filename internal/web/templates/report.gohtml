@@ -13,15 +13,14 @@
 <strong>OBS! Räknar endast med kvitton och fakturor i Cashflow</strong>
 </div>
 <br>
+<div class="centering">
+    <p>Nedan kan du välja en nämnd eller ett projekt som du vill se</p>
 </div>
 <div class="centering">
-<p>Nedan kan du välja en nämnd eller ett projekt som du vill se</p>
+    <p>Du kan även välja ett specifikt år för att se vad som spenderades då</p>
 </div>
-<div class="centering">
-<p>Du kan även välja ett specifikt år för att se vad som spenderades då</p>
-</div>
-<div class="centering">
-<p>Väljer du det nuvarande året kan du även se vad som är budgetterat för posterna</p>
+<div class="centering hide-on-tiny-mobile">
+    <p>Väljer du det nuvarande året kan du även se vad som är budgetterat för posterna</p>
 </div>
 <form class="centering">
     <select name="cc">
@@ -30,7 +29,6 @@
             <option {{if eq $CC $.SelectedCC}}selected{{end}}>{{$CC}}</option>
         {{end}}
     </select>
-    <br>
     <select name="year">
         <option {{if or (eq $.SelectedYear "Alla") (eq $.SelectedYear "")}}selected{{end}}>Alla</option>
         {{range $_, $year := .years}}
@@ -50,7 +48,7 @@
                 <th>Nämnd/Projekt</th>
                 <th>Spenderat</th>
                 {{if eq $.CurrentYear $.SelectedYear}}
-                    <th>Budgeterat</th>
+                    <th class="hide-on-tiny-mobile">Budgeterat</th>
                 {{end}}
             </tr>
             <tr style="height: 1em;"></tr>
@@ -61,7 +59,7 @@
                         {{$ReportCostCentreLine.Total}} kr
                     </th>
                     {{if eq $.CurrentYear $.SelectedYear}}
-                        <th>
+                        <th class="hide-on-tiny-mobile">
                              {{if $ReportCostCentreLine.Budget}}
                                  {{$ReportCostCentreLine.Budget}} kr
                              {{else}}
@@ -79,7 +77,7 @@
                             {{$ReportSecondaryCostCentreLine.Total}} kr          
                         </th>
                         {{if eq $.CurrentYear $.SelectedYear}}
-                            <th>
+                            <th class="hide-on-tiny-mobile">
                                 {{if $ReportSecondaryCostCentreLine.Budget}}
                                     {{$ReportSecondaryCostCentreLine.Budget}} kr
                                 {{else}}
@@ -97,7 +95,7 @@
                                 {{$ReportBudgetLine.Total}} kr
                             </td>
                             {{if eq $.CurrentYear $.SelectedYear}}
-                                <td class="net">
+                                <td class="net hide-on-tiny-mobile">
                                     {{if $ReportBudgetLine.Budget}}
                                         {{$ReportBudgetLine.Budget}} kr
                                     {{else}}
