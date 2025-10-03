@@ -49,6 +49,7 @@ func Mount(mux *http.ServeMux, databases Databases) error {
 	mux.Handle("/admin", authRoute(databases, adminPage, []string{"admin", "view-all"}))
 	mux.Handle("/admin/upload", authRoute(databases, uploadPage, []string{"admin"}))
 	mux.Handle("/api/CostCentres", cors(route(databases, apiCostCentres)))
+	mux.Handle("/api/CostCentresByYear", cors(route(databases, apiCostCentresByYear)))
 	mux.Handle("/api/SecondaryCostCentres", cors(route(databases, apiSecondaryCostCentre)))
 	mux.Handle("/api/BudgetLines", cors(route(databases, apiBudgetLine)))
 	mux.Handle("/framebudget", authRoute(databases, framePage, []string{}))

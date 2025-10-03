@@ -70,7 +70,7 @@ func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, per
 		return fmt.Errorf("failed to get simple budget line information from database: %v", err)
 	}
 
-	CCList, err := getCCList(databases.DBCF)
+	CCList, err := getCCList(databases.DBCF, selectedYear)
 	if err != nil {
 		return fmt.Errorf("failed get scan CCList information from database: %v", err)
 	}
@@ -103,11 +103,11 @@ func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, per
 	return nil
 }
 
-func getCCList(db *sql.DB) ([]string, error) {
+func getCCList(db *sql.DB, year string) ([]string, error) {
 	var result *sql.Rows
 	var err error
 
-	result, err = db.Query(uniqueCCGetStatementStatic)
+	result, err = db.Query(uniqueCCGetStatementStatic, year)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CCList from database: %v", err)
 	}

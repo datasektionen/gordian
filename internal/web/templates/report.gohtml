@@ -9,33 +9,46 @@
 <div class="centering">
 <h2>Vad har spenderats på min budgetpost?</h2>
 </div>
-<div class="centering">
-<strong>OBS! Räknar endast med kvitton och fakturor i Cashflow</strong>
-</div>
+
 <br>
 <div class="centering">
-    <p>Nedan kan du välja en nämnd eller ett projekt som du vill se</p>
+    <p>Nedan kan du se vad som har spenderats på en viss budgetpost.</p>
 </div>
 <div class="centering">
-    <p>Du kan även välja ett specifikt år för att se vad som spenderades då</p>
+    <p>Du kan sortera på både år och nämnd/projekt.</p>
+</div>
+<div class="centering">
+    <p>Väljer du ett år så ser du endast de nämnder och projekt som hade kostnader det året.</p>
 </div>
 <div class="centering hide-on-tiny-mobile">
     <p>Väljer du det nuvarande året kan du även se vad som är budgetterat för posterna</p>
 </div>
+<div class="centering">
+<strong>OBS! Räknar endast med kvitton och fakturor i Cashflow</strong>
+</div>
+<br>
 <form class="centering">
-    <select name="cc">
-        <option {{if or (eq $.SelectedCC "Alla") (eq $.SelectedCC "")}}selected{{end}}>Alla</option>
-        {{range $_, $CC := .CCList}}
-            <option {{if eq $CC $.SelectedCC}}selected{{end}}>{{$CC}}</option>
-        {{end}}
-    </select>
-    <select name="year">
-        <option {{if or (eq $.SelectedYear "Alla") (eq $.SelectedYear "")}}selected{{end}}>Alla</option>
-        {{range $_, $year := .years}}
-            <option {{if eq $year $.SelectedYear}}selected{{end}}>{{$year}}</option>
-        {{end}}
-    </select>
-    <button>
+    <div class="form-field">
+        <label for="yearSelect" class="form-label">År:</label>
+        <select name="year" id="yearSelect" class="form-select">
+            <option {{if or (eq $.SelectedYear "Alla") (eq $.SelectedYear "")}}selected{{end}}>Alla</option>
+            {{range $_, $year := .years}}
+                <option {{if eq $year $.SelectedYear}}selected{{end}}>{{$year}}</option>
+            {{end}}
+        </select>
+    </div>
+    
+    <div class="form-field">
+        <label for="costCentreSelect" class="form-label">Nämnd/Projekt:</label>
+        <select name="cc" id="costCentreSelect" class="form-select">
+            <option {{if or (eq $.SelectedCC "Alla") (eq $.SelectedCC "")}}selected{{end}}>Alla</option>
+            {{range $_, $CC := .CCList}}
+                <option {{if eq $CC $.SelectedCC}}selected{{end}}>{{$CC}}</option>
+            {{end}}
+        </select>
+    </div>
+    
+    <button class="form-button">
         Visa
     </button>
 </form>
@@ -116,5 +129,55 @@
     <p>{{ .motd }} © 2024 GOrdian</p>
     Budgetsystemet är skrivet av <a href="https://github.com/DouglasFischer">Douglas Fischer</a>
 </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const yearSelect = document.getElementById('yearSelect');
+    const costCentreSelect = document.getElementById('costCentreSelect');
+    
+    yearSelect.addEventListener('change', function() {
+        const selectedYear = this.value;
+        const currentCostCentre = costCentreSelect.value;
+        
+        // Fetch cost centres for the selected year
+        fetch('/api/CostCentresByYear?year=' + encodeURIComponent(selectedYear))
+            .then(response => response.json())
+            .then(costCentres => {
+                // Clear existing options
+                costCentreSelect.innerHTML = '';
+                
+                // Add "Alla" option
+                const allaOption = document.createElement('option');
+                allaOption.value = 'Alla';
+                allaOption.textContent = 'Alla';
+                costCentreSelect.appendChild(allaOption);
+                
+                // Add cost centre options
+                costCentres.forEach(cc => {
+                    const option = document.createElement('option');
+                    option.value = cc;
+                    option.textContent = cc;
+                    costCentreSelect.appendChild(option);
+                });
+                
+                // Try to maintain the current selection if it still exists
+                const options = Array.from(costCentreSelect.options);
+                const matchingOption = options.find(option => option.value === currentCostCentre);
+                if (matchingOption) {
+                    costCentreSelect.value = currentCostCentre;
+                } else {
+                    // Default to "Alla" if current selection is no longer available
+                    costCentreSelect.value = 'Alla';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching cost centres:', error);
+                // On error, reset to "Alla"
+                costCentreSelect.innerHTML = '<option value="Alla">Alla</option>';
+                costCentreSelect.value = 'Alla';
+            });
+    });
+});
+</script>
 </body>
 </html>

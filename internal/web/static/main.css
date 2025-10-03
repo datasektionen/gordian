@@ -181,9 +181,21 @@ h1 {
 }
 
 form.centering {
-  flex-direction: row;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.form-field {
+  margin-bottom: 10px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  text-align: center;
 }
 
 form.centering select {
