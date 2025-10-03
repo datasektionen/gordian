@@ -37,15 +37,18 @@ var uniqueCCGetStatementStatic = `
 	SELECT DISTINCT UPPER(cost_centre) AS cost_centre
 	FROM (
 		SELECT 
-			ep.cost_centre
+			ep.cost_centre,
+			EXTRACT(YEAR FROM e.expense_date)::text AS date
 		FROM expenses_expensepart AS ep
 		INNER JOIN expenses_expense AS e ON ep.expense_id = e.id
 		UNION
 		SELECT 
-			ip.cost_centre
+			ip.cost_centre,
+			EXTRACT(YEAR FROM COALESCE(i.invoice_date, i.payed_at))::text AS date
 		FROM invoices_invoicepart AS ip
 		INNER JOIN invoices_invoice AS i ON ip.invoice_id = i.id
 	) AS combined
+	WHERE (COALESCE($1, '') = '' OR $1 = 'Alla' OR date = $1)
 	ORDER BY UPPER(cost_centre);
 	`
 
