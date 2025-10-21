@@ -8,9 +8,9 @@ services:
     environment:
       - "GO_CONN=host=gordian-db port=5432 user=alexander password=kopis dbname=budget sslmode=disable"
       - "CF_CONN=host=cashflow-db port=5432 user=cashflow password=cashflow dbname=cashflow sslmode=disable"
-      - LOGIN_API_URL=http://login:7002
+      - LOGIN_API_URL=http://nyckeln:7002
       - LOGIN_FRONTEND_URL=http://localhost:7002
-      - HIVE_URL=https://hive.datasektionen.se/api/v1
+      - HIVE_URL=http://nyckeln:7004/api/v1
       - HIVE_TOKEN=shmunguss
       - SERVER_PORT=3000
       - SERVER_URL=http://localhost:3000
@@ -56,9 +56,66 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-  login:
+  nyckeln:
     image: ghcr.io/datasektionen/nyckeln-under-dorrmattan
-    ports: [7002:7002]
     environment:
-      # le big admin moment, you can change this to the output of `curl https://dfunkt.datasektionen.se/api/role/kassor/current | jq '.mandates[0].User.kthid' -r`
-      - KTH_ID=lukmal
+      KTH_ID: lukmal #change to change user
+    configs:
+      - source: nyckeln.yaml
+        target: /config.yaml
+    ports:
+      - 7001:7001
+      - 7002:7002
+      - 7003:7003
+      - 7004:7004
+
+configs:
+  nyckeln.yaml:
+    content: |
+      # Used when migrated to sso
+      # clients:
+      #   - id: "client-id"
+      #     secret: "client-secret"
+      #     redirect_uris:
+      #       - http://localhost:4000/oidcc/callback
+      #
+      # users:
+      #   - ug_kth_id: some-id
+      #     kth_id: turetek
+      #     email: turetek@kth.se
+      #     first_name: Ture
+      #     family_name: Teknolog
+      #     year_tag: D-83
+      #   - ug_kth_id: some-other-id
+      #     kth_id: diadat
+      #     email: diadat@kth.se
+      #     first_name: Diana
+      #     family_name: Datalog
+      #     year_tag: D-83
+      #   - ug_kth_id: yet-anouther-id
+      #     kth_id: marmed
+      #     email: marmed@kth.se
+      #     first_name: Martin
+      #     family_name: Median
+      #     year_tag: M-00
+
+      users:
+      - kth_id: lukmal
+      - kth_id: viktoe
+
+      hive:
+        groups:
+          - name: Kassör
+            id: kassor
+            domain: example.com
+            members:
+              - lukmal
+            permissions:
+              - id: admin
+          - name: Systemansvarig
+            id: d-sys
+            domain: example.com
+            members:
+              - viktoe
+            permissions:
+              - id: view-all
