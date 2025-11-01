@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type SimpleBudgetLine struct {
@@ -284,15 +285,25 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 		}
 	}
 
+	// Format display names and clean up zero budgets
 	for i := range costCentres {
+		// Properly capitalize cost centre name
+		costCentres[i].CostCentreName = properCapitalize(costCentres[i].CostCentreName)
+		
 		if costCentres[i].Budget == "0" {
 			costCentres[i].Budget = ""
 		}
 		for j := range costCentres[i].SecondaryCostCentresList {
+			// Properly capitalize secondary cost centre name
+			costCentres[i].SecondaryCostCentresList[j].SecondaryCostCentreName = properCapitalize(costCentres[i].SecondaryCostCentresList[j].SecondaryCostCentreName)
+			
 			if costCentres[i].SecondaryCostCentresList[j].Budget == "0" {
 				costCentres[i].SecondaryCostCentresList[j].Budget = ""
 			}
 			for k := range costCentres[i].SecondaryCostCentresList[j].BudgetLinesList {
+				// Properly capitalize budget line name
+				costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].BudgetLineName = properCapitalize(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].BudgetLineName)
+				
 				if costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget == "0" {
 					costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget = ""
 				}
@@ -399,4 +410,105 @@ func formatNumber(value float64) string {
 	}
 	formatted := strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", value), "0"), ".")
 	return strings.Replace(formatted, ".", ",", 1)
+}
+
+// List of acronyms that should never be lowercased
+var preservedAcronyms = []string{"DEMON", "SM", "(SM)", "DKM", "METAdorerna", "dÅre", "STUDS", "dJulkalendern", "EECS", "dFunk", "DJ", "dJubileet", "META", "DM", "dFunkteambuilding", "dFunklunch", "dFunköverlämning", "dFunkt", "TGT", "DESC", "TB", "VM", "PR", "BÜGG"," DSF", "HTC", "HTD", "RN", "NBF", "INQU", "INDA", "INEK", "TTG", "II", "LQ", "BLB", "SpexM", "MKM", "HLR", "DSF", "INAUG", "GUDAR", "dRama"}
+
+// properCapitalize converts a string to title case (first letter uppercase, rest lowercase)
+// while preserving certain acronyms and special characters like Ø
+func properCapitalize(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s
+	}
+
+	// Check if the entire string matches a preserved acronym (case-insensitive check)
+	for _, acronym := range preservedAcronyms {
+		if strings.EqualFold(s, acronym) {
+			return acronym
+		}
+	}
+
+	// Check if the string contains preserved acronyms and handle word by word
+	words := strings.Fields(s)
+	for i, word := range words {
+		found := false
+		for _, acronym := range preservedAcronyms {
+			if strings.EqualFold(word, acronym) {
+				words[i] = acronym
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Check if word contains special delimiters and handle parts separately
+			delimiters := []string{"-", "/", "+", "&"}
+			hasDelimiter := false
+			var delimiter string
+			
+			for _, delim := range delimiters {
+				if strings.Contains(word, delim) {
+					hasDelimiter = true
+					delimiter = delim
+					break
+				}
+			}
+			
+			if hasDelimiter {
+				parts := strings.Split(word, delimiter)
+				for p, part := range parts {
+					partFound := false
+					// Check if this part is a preserved acronym
+					for _, acronym := range preservedAcronyms {
+						if strings.EqualFold(part, acronym) {
+							parts[p] = acronym
+							partFound = true
+							break
+						}
+					}
+					if !partFound {
+						parts[p] = capitalizePart(part)
+					}
+				}
+				words[i] = strings.Join(parts, delimiter)
+			} else {
+				words[i] = capitalizePart(word)
+			}
+		}
+	}
+
+	return strings.Join(words, " ")
+}
+
+// capitalizePart capitalizes the first letter and lowercases the rest,
+// but preserves uppercase Ø and handles special case "nØ"
+func capitalizePart(s string) string {
+	runes := []rune(s)
+	if len(runes) == 0 {
+		return s
+	}
+	
+	// Special case: standalone "nø" should always be "nØ"
+	if len(runes) == 2 && unicode.ToLower(runes[0]) == 'n' && unicode.ToLower(runes[1]) == 'ø' {
+		return "nØ"
+	}
+	
+	result := make([]rune, len(runes))
+	result[0] = unicode.ToUpper(runes[0])
+	
+	for j := 1; j < len(runes); j++ {
+		// Handle special case: 'n' followed by 'ø' should be 'nØ'
+		if j > 0 && unicode.ToLower(runes[j-1]) == 'n' && unicode.ToLower(runes[j]) == 'ø' {
+			result[j-1] = 'n'
+			result[j] = 'Ø'
+		} else if runes[j] == 'Ø' || runes[j] == 'ø' {
+			// Never lowercase Ø
+			result[j] = 'Ø'
+		} else {
+			result[j] = unicode.ToLower(runes[j])
+		}
+	}
+	
+	return string(result)
 }
