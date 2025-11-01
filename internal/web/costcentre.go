@@ -3,7 +3,9 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/datasektionen/GOrdian/internal/excel"
 )
@@ -45,6 +47,9 @@ func costCentrePage(w http.ResponseWriter, r *http.Request, databases Databases,
 	if err != nil {
 		return fmt.Errorf("failed calculate secondary cost centre values: %v", err)
 	}
+
+	// Sort secondary cost centres: "internt" items first, then alphabetically
+	sortSecondaryCostCentres(secondaryCostCentresWithBudgetLinesList)
 
 	costCentreTotalIncome, costCentreTotalExpense, costCentreTotalResult, err := calculateCostCentre(secondaryCostCentresWithBudgetLinesList)
 	if err != nil {
@@ -91,6 +96,34 @@ func calculateSecondaryCostCentres(secondaryCostCentresWithBudgetLinesList []sec
 		secondaryCostCentresWithBudgetLinesList[index].SecondaryCostCentreTotalResult = totalIncome + totalExpense
 	}
 	return secondaryCostCentresWithBudgetLinesList, nil
+}
+
+func sortSecondaryCostCentres(list []secondaryCostCentresWithBudgetLines) {
+	sort.SliceStable(list, func(i, j int) bool {
+		nameI := strings.ToLower(list[i].SecondaryCostCentreName)
+		nameJ := strings.ToLower(list[j].SecondaryCostCentreName)
+		
+		isExactInterntI := nameI == "internt"
+		isExactInterntJ := nameJ == "internt"
+		containsInterntI := strings.Contains(nameI, "internt")
+		containsInterntJ := strings.Contains(nameJ, "internt")
+		
+		if isExactInterntI && !isExactInterntJ {
+			return true
+		}
+		if !isExactInterntI && isExactInterntJ {
+			return false
+		}
+		
+		if containsInterntI && !containsInterntJ {
+			return true
+		}
+		if !containsInterntI && containsInterntJ {
+			return false
+		}
+		
+		return nameI < nameJ
+	})
 }
 
 type secondaryCostCentresWithBudgetLines struct {
