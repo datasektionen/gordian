@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"fmt"
+	"html"
 	"net/http"
 	"strconv"
 	"strings"
@@ -155,6 +156,12 @@ func getCashflowLines(db *sql.DB, year string, cc string) ([]CashflowLine, error
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan cashflow line from query result: %v", err)
 		}
+		
+		// Decode HTML entities immediately when reading from database
+		cashflowLine.CashflowLineCostCentre = html.UnescapeString(cashflowLine.CashflowLineCostCentre)
+		cashflowLine.CashflowLineSecondaryCostCentre = html.UnescapeString(cashflowLine.CashflowLineSecondaryCostCentre)
+		cashflowLine.CashflowLineBudgetLine = html.UnescapeString(cashflowLine.CashflowLineBudgetLine)
+		
 		cashflowLines = append(cashflowLines, cashflowLine)
 	}
 	return cashflowLines, nil
@@ -210,10 +217,30 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			return nil, fmt.Errorf("failed to parse cashflow total: %v", err)
 		}
 
-		secCostCentre.BudgetLinesList = append(secCostCentre.BudgetLinesList, ReportBudgetLine{
-			BudgetLineName: line.CashflowLineBudgetLine,
-			Total:          formatNumber(formattedTotal),
-		})
+		// Check if budget line already exists and update it, otherwise append.
+		// Needed because of the & fippel
+		found := false
+		for i, bl := range secCostCentre.BudgetLinesList {
+			if bl.BudgetLineName == line.CashflowLineBudgetLine {
+				// Budget line exists, add to its total
+				existingTotal, err := strconv.ParseFloat(strings.Replace(bl.Total, ",", ".", 1), 64)
+				if err != nil {
+					existingTotal = 0
+				}
+				newTotal := existingTotal + formattedTotal
+				secCostCentre.BudgetLinesList[i].Total = formatNumber(newTotal)
+				found = true
+				break
+			}
+		}
+		
+		if !found {
+			// New budget line, append it
+			secCostCentre.BudgetLinesList = append(secCostCentre.BudgetLinesList, ReportBudgetLine{
+				BudgetLineName: line.CashflowLineBudgetLine,
+				Total:          formatNumber(formattedTotal),
+			})
+		}
 
 		var err1, err2 error
 
@@ -413,11 +440,13 @@ func formatNumber(value float64) string {
 }
 
 // List of acronyms that should never be lowercased
-var preservedAcronyms = []string{"DEMON", "SM", "(SM)", "DKM", "METAdorerna", "dÅre", "STUDS", "dJulkalendern", "EECS", "dFunk", "DJ", "dJubileet", "META", "DM", "dFunkteambuilding", "dFunklunch", "dFunköverlämning", "dFunkt", "TGT", "DESC", "TB", "VM", "PR", "BÜGG"," DSF", "HTC", "HTD", "RN", "NBF", "INQU", "INDA", "INEK", "TTG", "II", "LQ", "BLB", "SpexM", "MKM", "HLR", "DSF", "INAUG", "GUDAR", "dRama"}
+var preservedAcronyms = []string{"DEMON", "SM", "(SM)", "DKM", "METAdorerna", "dÅre", "STUDS", "dJulkalendern", "EECS", "dFunk", "DJ", "dJubileet", "META", "DM", "dFunkteambuilding", "dFunklunch", "dFunköverlämning", "dFunkt", "TGT", "DESC", "TB", "VM", "PR", "BÜGG"," DSF", "HTC", "HTD", "RN", "NBF", "INQU", "INDA", "INEK", "TTG", "II", "LQ", "BLB", "SpexM", "MKM", "HLR", "DSF", "INAUG", "GUDAR", "dRama", "METAspexet"}
 
 // properCapitalize converts a string to title case (first letter uppercase, rest lowercase)
 // while preserving certain acronyms and special characters like Ø
 func properCapitalize(s string) string {
+	// HTML entities should already be decoded at this point, but just in case
+	s = html.UnescapeString(s)
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return s
