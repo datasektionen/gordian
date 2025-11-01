@@ -27,7 +27,7 @@
 <strong>OBS! Räknar endast med kvitton och fakturor i Cashflow</strong>
 </div>
 <br>
-<form class="centering">
+<form class="centering" id="reportForm">
     <div class="form-field">
         <label for="yearSelect" class="form-label">År:</label>
         <select name="year" id="yearSelect" class="form-select">
@@ -48,6 +48,13 @@
         </select>
     </div>
     
+    <div class="form-field" id="unspentCheckboxContainer" {{if not (eq $.CurrentYear $.SelectedYear)}}style="display: none;"{{end}}>
+        <label for="showUnspentCheck" class="form-label">
+            <input type="checkbox" name="showUnspent" id="showUnspentCheck" value="true">
+            Visa ospenderade budgetposter
+        </label>
+    </div>
+    
     <button class="form-button">
         Visa
     </button>
@@ -56,7 +63,7 @@
 
 <div id="costCentre">
     <div id="content">  
-        <table>
+        <table style="table-layout: fixed; width: 100%;">
             <tr style="background-color: rgb(176,190,197) !important;">
                 <th>Nämnd/Projekt</th>
                 <th>Spenderat</th>
@@ -82,7 +89,13 @@
                     {{end}}
                 </tr>
                 {{range $_, $ReportSecondaryCostCentreLine := $ReportCostCentreLine.SecondaryCostCentresList}}
-                    <tr style="background-color: rgb(207,216,220) !important;">
+                    {{$hasSpentLines := false}}
+                    {{range $_, $bl := $ReportSecondaryCostCentreLine.BudgetLinesList}}
+                        {{if ne $bl.Total "0"}}
+                            {{$hasSpentLines = true}}
+                        {{end}}
+                    {{end}}
+                    <tr class="secondary-cost-centre-header {{if not $hasSpentLines}}unspent-section{{end}}" style="background-color: rgb(207,216,220) !important;{{if not $hasSpentLines}} display: none;{{end}}">
                         <th>  
                             {{$ReportSecondaryCostCentreLine.SecondaryCostCentreName}}
                         </th> 
@@ -100,7 +113,7 @@
                         {{end}}
                     </tr>
                     {{range $_, $ReportBudgetLine := $ReportSecondaryCostCentreLine.BudgetLinesList}}
-                        <tr>
+                        <tr class="budget-line {{if and (eq $.CurrentYear $.SelectedYear) (eq $ReportBudgetLine.Total "0")}}unspent-line{{end}} {{if not $hasSpentLines}}unspent-section{{end}}" {{if and (eq $.CurrentYear $.SelectedYear) (eq $ReportBudgetLine.Total "0")}}style="display: none;"{{end}}>
                             <td class="net">  
                                 {{$ReportBudgetLine.BudgetLineName}}
                             </td>
@@ -118,7 +131,7 @@
                             {{end}}
                         </tr>
                     {{end}}
-                    <tr style="height: 1em;"></tr>
+                    <tr class="spacer-row {{if not $hasSpentLines}}unspent-section{{end}}" style="height: 1em;{{if not $hasSpentLines}} display: none;{{end}}"></tr>
                 {{end}}
                 <tr style="height: 3em;"></tr>
             {{end}}
@@ -134,10 +147,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     const yearSelect = document.getElementById('yearSelect');
     const costCentreSelect = document.getElementById('costCentreSelect');
+    const showUnspentCheck = document.getElementById('showUnspentCheck');
+    const reportForm = document.getElementById('reportForm');
+    const currentYear = '{{$.CurrentYear}}';
     
+    // Show/hide checkbox based on year selection - removed, now always visible
     yearSelect.addEventListener('change', function() {
         const selectedYear = this.value;
-        const currentCostCentre = costCentreSelect.value;
         
         // Fetch cost centres for the selected year
         fetch('/api/CostCentresByYear?year=' + encodeURIComponent(selectedYear))
@@ -161,6 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 // Try to maintain the current selection if it still exists
+                const currentCostCentre = '{{$.SelectedCC}}';
                 const options = Array.from(costCentreSelect.options);
                 const matchingOption = options.find(option => option.value === currentCostCentre);
                 if (matchingOption) {
@@ -176,6 +193,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 costCentreSelect.innerHTML = '<option value="Alla">Alla</option>';
                 costCentreSelect.value = 'Alla';
             });
+    });
+    
+    // Toggle unspent budget lines visibility without reloading the page
+    showUnspentCheck.addEventListener('change', function() {
+        const unspentLines = document.querySelectorAll('.unspent-line');
+        const unspentSections = document.querySelectorAll('.unspent-section');
+        
+        if (this.checked) {
+            unspentLines.forEach(line => {
+                line.style.display = '';
+            });
+            unspentSections.forEach(section => {
+                section.style.display = '';
+            });
+        } else {
+            unspentLines.forEach(line => {
+                line.style.display = 'none';
+            });
+            unspentSections.forEach(section => {
+                section.style.display = 'none';
+            });
+        }
     });
 });
 </script>

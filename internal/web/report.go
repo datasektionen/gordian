@@ -82,7 +82,9 @@ func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, per
 		return fmt.Errorf("failed to get scan cashflow lines information from database: %v", err)
 	}
 
-	structuredReport, err := StructureReportLines(cashflowLines, simpleBudgetLines, selectedYear)
+	// Always include unspent budget lines for current year in the data
+	// The template will handle showing/hiding them based on showUnspent
+	structuredReport, err := StructureReportLines(cashflowLines, simpleBudgetLines, selectedYear, selectedYear == currentYear)
 	if err != nil {
 		return fmt.Errorf("failed to structure cashflow and simple budget lines: %v", err)
 	}
@@ -198,7 +200,7 @@ func findOrAddSecondaryCostCentre(secCostCentres *[]ReportSecondaryCostCentreLin
 }
 
 // Organize CashflowLines into structured data
-func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []SimpleBudgetLine, selectedYear string) ([]ReportCostCentreLine, error) {
+func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []SimpleBudgetLine, selectedYear string, showUnspent bool) ([]ReportCostCentreLine, error) {
 	var costCentres []ReportCostCentreLine
 
 	currentYear := strconv.Itoa(time.Now().Year())
@@ -252,20 +254,27 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 		}
 	}
 
-	// Process SimpleBudgetLines
+	// Process SimpleBudgetLines - add budget values to existing lines or create new lines for unspent budgets
 	for _, budgetLine := range simpleBudgetLines {
+		// Only process expense lines (negative values in the database)
+		expenseValue, err := strconv.ParseFloat(strings.Replace(budgetLine.BudgetLineExpense, ",", ".", 1), 64)
+		if err != nil || expenseValue >= 0 {
+			// Skip if not a valid expense (incomes are positive in the database)
+			continue
+		}
 
-		existsInCashflow := false
-		for _, cashflowLine := range cashflowLines {
-			if strings.EqualFold(cashflowLine.CashflowLineCostCentre, budgetLine.BudgetLineCostCentreName) &&
-				strings.EqualFold(cashflowLine.CashflowLineSecondaryCostCentre, budgetLine.BudgetLineSecondaryCostCentreName) &&
-				strings.EqualFold(cashflowLine.CashflowLineBudgetLine, budgetLine.BudgetLineName) {
-				existsInCashflow = true
+		// Check if this budget line's cost centre exists in our result set
+		// (meaning it either had cashflow or we want to include it)
+		costCentreExists := false
+		for _, cc := range costCentres {
+			if strings.EqualFold(cc.CostCentreName, budgetLine.BudgetLineCostCentreName) {
+				costCentreExists = true
 				break
 			}
 		}
 
-		if !existsInCashflow {
+		if !costCentreExists {
+			// This cost centre doesn't match our filter, skip it
 			continue
 		}
 
@@ -291,6 +300,14 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			}
 		}
 		if !found {
+			// Only create new budget line entries for the current year (unspent budgets)
+			// For past years, only show lines that have cashflow entries
+			// Also respect the showUnspent toggle
+			if selectedYear != currentYear || !showUnspent {
+				continue
+			}
+			
+			// Budget line doesn't exist yet (no cashflow entry), create it with zero total
 			secCostCentre.BudgetLinesList = append(secCostCentre.BudgetLinesList, ReportBudgetLine{
 				BudgetLineName: budgetLine.BudgetLineName,
 				Total:          "0",
@@ -298,7 +315,7 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			})
 		}
 
-		if selectedYear == currentYear {
+		if selectedYear == currentYear && budgetValue != "0" {
 			var err error
 			secCostCentre.Budget, err = addTotals(secCostCentre.Budget, budgetValue)
 			if err != nil {
@@ -320,7 +337,15 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 		if costCentres[i].Budget == "0" {
 			costCentres[i].Budget = ""
 		}
+		
+		// Filter out empty secondary cost centres
+		filteredSecCostCentres := []ReportSecondaryCostCentreLine{}
 		for j := range costCentres[i].SecondaryCostCentresList {
+			// Skip secondary cost centres with no budget lines
+			if len(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList) == 0 {
+				continue
+			}
+			
 			// Properly capitalize secondary cost centre name
 			costCentres[i].SecondaryCostCentresList[j].SecondaryCostCentreName = properCapitalize(costCentres[i].SecondaryCostCentresList[j].SecondaryCostCentreName)
 			
@@ -335,7 +360,10 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 					costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget = ""
 				}
 			}
+			
+			filteredSecCostCentres = append(filteredSecCostCentres, costCentres[i].SecondaryCostCentresList[j])
 		}
+		costCentres[i].SecondaryCostCentresList = filteredSecCostCentres
 	}
 
 	return costCentres, nil
