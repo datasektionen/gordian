@@ -1,0 +1,33 @@
+ARG GO_VERSION=1.22
+ARG ALPINE_VERSION=3.19
+
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS code
+
+RUN apk add nginx
+
+WORKDIR /src
+
+COPY go.* ./
+
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=cache,target=/root/.cache/go-build/ \
+    go mod download -x
+    
+    COPY . .
+
+    RUN echo "nginx &" >> run.sh
+    RUN echo "go run ." >> run.sh
+    RUN chmod +x run.sh
+
+FROM code AS build
+
+
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=cache,target=/root/.cache/go-build/ \
+    CGO_ENABLED=0 go build -o /bin/server ./
+
+FROM alpine:${ALPINE_VERSION}
+
+COPY --from=build /bin/server /bin/
+
+CMD [ "./run.sh" ]

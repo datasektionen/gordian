@@ -1,17 +1,17 @@
 package web
 
 import (
+	"context"
 	"database/sql"
 	"embed"
-	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"log/slog"
 	"math/rand"
 	"net/http"
 	"strconv"
 
+	"github.com/datasektionen/GOrdian/internal/auth"
 	"github.com/datasektionen/GOrdian/internal/config"
 	"github.com/datasektionen/GOrdian/internal/database"
 )
@@ -22,8 +22,10 @@ type Databases struct {
 }
 
 const (
-	loginSessionCookieName = "login-session"
+	sessionCookieName = "session"
 )
+
+var oidcConfig *auth.OIDCConfig
 
 //go:embed templates/*.gohtml
 var templatesFS embed.FS
@@ -35,7 +37,17 @@ var templates *template.Template
 
 func Mount(mux *http.ServeMux, databases Databases) error {
 	var err error
-	tokenURL := config.GetEnv().LoginFrontendURL + "/login?callback=" + config.GetEnv().ServerURL + "/token?token="
+	
+	// Initialize OIDC
+	ctx := context.Background()
+	env := config.GetEnv()
+	
+	oidcConfig, err = auth.InitOIDC(ctx, env.OIDCProvider, env.OIDCClientID, env.OIDCClientSecret, env.OIDCRedirectURL)
+	if err != nil {
+		return fmt.Errorf("failed to initialize OIDC: %w", err)
+	}
+	slog.Info("OIDC authentication enabled")
+	
 	templates, err = template.New("").Funcs(map[string]any{"formatMoney": formatMoney, "add": add, "sliceContains": sliceContains}).ParseFS(templatesFS, "templates/*.gohtml")
 	if err != nil {
 		return err
@@ -43,9 +55,11 @@ func Mount(mux *http.ServeMux, databases Databases) error {
 	mux.Handle("/static/", http.FileServerFS(staticFiles))
 	mux.Handle("/{$}", authRoute(databases, indexPage, []string{}))
 	mux.Handle("/costcentre/{costCentreIDPath}", authRoute(databases, costCentrePage, []string{}))
-	mux.Handle("/login", http.RedirectHandler(tokenURL, http.StatusSeeOther))
-	mux.Handle("/token", route(databases, tokenPage))
-	mux.Handle("/logout", route(databases, logoutPage))
+	
+	// OIDC Authentication routes
+	mux.Handle("/login", route(databases, oidcLoginPage))
+	mux.Handle("/auth/callback", route(databases, oidcCallbackPage))
+	mux.Handle("/logout", route(databases, oidcLogoutPage))
 	mux.Handle("/admin", authRoute(databases, adminPage, []string{"admin", "view-all"}))
 	mux.Handle("/admin/upload", authRoute(databases, uploadPage, []string{"admin"}))
 	mux.Handle("/api/CostCentres", cors(route(databases, apiCostCentres)))
@@ -87,75 +101,34 @@ func route(databases Databases, handler func(w http.ResponseWriter, r *http.Requ
 
 func authRoute(databases Databases, handler func(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error, requiredPerms []string) http.Handler {
 	return route(databases, func(w http.ResponseWriter, r *http.Request, databases Databases) error {
-		loginCookie, err := r.Cookie(loginSessionCookieName)
-		if err != nil {
-			if len(requiredPerms) == 0 {
-				return handler(w, r, databases, []string{}, false)
+		env := config.GetEnv()
+		
+		// If no permissions required, check session without redirecting
+		if len(requiredPerms) == 0 {
+			_, perms, loggedIn := auth.CheckAuth(r, env.AppSecretKey)
+			if loggedIn {
+				// User is logged in
+				return handler(w, r, databases, perms, true)
 			}
-			slog.Error("failed to get login cookie", "error", err)
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Not logged in"))
-			return nil
-		}
-		loginUser, err := http.Get(config.GetEnv().LoginAPIURL + "/verify/" + loginCookie.Value + "?api_key=" + config.GetEnv().LoginToken)
-		if err != nil {
-			return fmt.Errorf("no response from login: %v", err)
-		}
-		defer loginUser.Body.Close()
-
-		if loginUser.StatusCode != 200 {
+			// User not logged in, but that's okay - allow access
 			return handler(w, r, databases, []string{}, false)
 		}
-		var loginBody struct {
-			User string `json:"user"`
+		
+		// Permissions required - must authenticate (will redirect if not logged in)
+		user, perms, err := auth.Auth(w, r, oidcConfig.OAuth2Config, env.AppSecretKey)
+		if err == nil && user != "" {
+			// Successfully authenticated with OIDC
+			if !sliceContains(requiredPerms, perms...) {
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte("Forbidden"))
+				return nil
+			}
+			return handler(w, r, databases, perms, true)
 		}
-		err = json.NewDecoder(loginUser.Body).Decode(&loginBody)
-		if err != nil {
-			return fmt.Errorf("failed to decode user body from json: %v", err)
-		}
-
-		req, err := http.NewRequest("GET", config.GetEnv().HiveURL+"/user/"+loginBody.User+"/permissions", nil)
-		if err != nil {
-			return fmt.Errorf("failed to create request for hive: %v", err)
-		}
-		req.Header.Set("Authorization", "Bearer "+ config.GetEnv().HiveToken)
-		userPerms, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return fmt.Errorf("no response from hive: %v", err)
-		}
-		defer userPerms.Body.Close()
-
-		perms, err := decodePerms(userPerms.Body)
-		if err != nil {
-			return fmt.Errorf("failed to decode perms body from json: %v", err)
-		}
-
-		if !sliceContains(requiredPerms, perms...) && len(requiredPerms) != 0 {
-			slog.Error("Error from handler", "error", err)
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return nil
-		}
-		return handler(w, r, databases, perms, true)
+		
+		// If OIDC auth fails, it will have redirected, so return
+		return nil
 	})
-}
-
-func decodePerms(respBody io.Reader) ([]string, error) {
-	type permObj struct {
-		ID string `json:"id"`
-	}
-
-	var permObjs []permObj
-	err := json.NewDecoder(respBody).Decode(&permObjs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode perms body from json: %v", err)
-	}
-
-	perms := make([]string, len(permObjs))
-	for i, p := range permObjs {
-		perms[i] = p.ID
-	}
-	return perms, nil
 }
 
 func sliceContains(list1 []string, list2 ...string) bool {
@@ -224,21 +197,6 @@ func uploadPage(w http.ResponseWriter, r *http.Request, databases Databases, per
 	return nil
 }
 
-func tokenPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
-	sessionCookieVal := r.FormValue("token")
-	sessionCookie := http.Cookie{Name: loginSessionCookieName, Value: sessionCookieVal}
-	http.SetCookie(w, &sessionCookie)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-	return nil
-}
-
-func logoutPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
-	sessionCookie := http.Cookie{Name: loginSessionCookieName, MaxAge: -1}
-	http.SetCookie(w, &sessionCookie)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-	return nil
-}
-
 func motdGenerator() string {
 	options := []string{
 		"You have very many money:",
@@ -247,10 +205,77 @@ func motdGenerator() string {
 		"Brought to you by FIPL consulting:",
 		"Kom på hackerkvällarna!",
 		"12345690,+",
-		"u¡õcÂðÚmäðýòqÔçSegmentation fault (core dumped)",
+		"u¡õcÂðÚmäðýòqÔçSegmentation fault (core dumped)",
 		"Moo Deng!",
 		"Money is really just, like, a social construct, man",
 		"Receipts 👏 Proof 👏 Timeline 👏 Screenshots 👏"}
 	randomIndex := rand.Intn(len(options))
 	return options[randomIndex]
+}
+
+// OIDC handlers
+func oidcLoginPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
+	if oidcConfig == nil {
+		return fmt.Errorf("OIDC not configured")
+	}
+	http.Redirect(w, r, oidcConfig.OAuth2Config.AuthCodeURL("state"), http.StatusFound)
+	return nil
+}
+
+func oidcCallbackPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
+	if oidcConfig == nil {
+		return fmt.Errorf("OIDC not configured")
+	}
+	
+	env := config.GetEnv()
+	ctx := context.Background()
+	
+	// Handle the callback and get the user
+	user, err := oidcConfig.HandleCallback(ctx, r)
+	if err != nil {
+		slog.Error("OIDC callback failed", "error", err)
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+	
+	// Fetch permissions from Hive
+	perms, err := auth.GetPermissionsFromHive(user, env.HiveURL, env.HiveToken)
+	if err != nil {
+		slog.Warn("Failed to get permissions from Hive", "error", err, "user", user)
+		perms = []string{} // Continue with no permissions
+	}
+	
+	// Create session token
+	tokenString, err := auth.CreateSessionToken(user, perms, env.AppSecretKey)
+	if err != nil {
+		return fmt.Errorf("failed to create session token: %w", err)
+	}
+	
+	// Set session cookie
+	sessionCookie := http.Cookie{
+		Name:     sessionCookieName,
+		Value:    tokenString,
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   86400 * 7, // 7 days
+		Path:     "/",
+	}
+	http.SetCookie(w, &sessionCookie)
+	
+	// Redirect to home page
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
+}
+
+func oidcLogoutPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
+	// Clear session cookie
+	sessionCookie := http.Cookie{
+		Name:     sessionCookieName,
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &sessionCookie)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
 }
