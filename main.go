@@ -52,5 +52,5 @@ func main() {
 	if err := web.Mount(http.DefaultServeMux, web.Databases{DBCF: dbCF, DBGO: dbGO}); err != nil {
 		panic(err)
 	}
-	panic(http.ListenAndServe("0.0.0.0:3000", nil))
+	panic(http.ListenAndServe("0.0.0.0:"+config.GetEnv().ServerPort, nil))
 }
