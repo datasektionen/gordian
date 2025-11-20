@@ -24,8 +24,7 @@ type Databases struct {
 }
 
 const (
-	sessionCookieName = "session"
-	stateCookieName   = "oauth_state"
+	stateCookieName = "oauth_state"
 )
 
 var oidcConfig *auth.OIDCConfig
@@ -305,7 +304,7 @@ func oidcCallbackPage(w http.ResponseWriter, r *http.Request, databases Database
 	
 	// Set session cookie
 	sessionCookie := http.Cookie{
-		Name:     sessionCookieName,
+		Name:     auth.SessionCookieName,
 		Value:    tokenString,
 		HttpOnly: true,
 		Secure:   true,
@@ -323,7 +322,7 @@ func oidcCallbackPage(w http.ResponseWriter, r *http.Request, databases Database
 func oidcLogoutPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
 	// Clear session cookie
 	sessionCookie := http.Cookie{
-		Name:     sessionCookieName,
+		Name:     auth.SessionCookieName,
 		MaxAge:   -1,
 		Path:     "/",
 		HttpOnly: true,

@@ -14,6 +14,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const (
+	// SessionCookieName is the name of the session cookie used for authentication
+	SessionCookieName = "session"
+)
+
 type OIDCConfig struct {
 	OAuth2Config oauth2.Config
 	Verifier     *oidc.IDTokenVerifier
@@ -89,28 +94,9 @@ func parseAndValidateJWT(tokenString string, secretKey string) (sub string, perm
 
 // CheckAuth checks if user is authenticated without redirecting
 func CheckAuth(r *http.Request, secretKey string) (string, []string, bool) {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie(SessionCookieName)
 	if err != nil || cookie.Value == "" {
-		// Generate a secure random state parameter
-		state, err := generateSecureState()
-		if err != nil {
-			return "", nil, fmt.Errorf("failed to generate state: %w", err)
-		}
-		
-		// Store state in a secure cookie
-		stateCookie := http.Cookie{
-			Name:     "oauth_state",
-			Value:    state,
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   600, // 10 minutes - short-lived for security
-			Path:     "/",
-		}
-		http.SetCookie(w, &stateCookie)
-		
-		http.Redirect(w, r, oauth2Config.AuthCodeURL(state), http.StatusFound)
-		return "", nil, err
+		return "", nil, false
 	}
 
 	sub, perms, err := parseAndValidateJWT(cookie.Value, secretKey)
@@ -122,7 +108,7 @@ func CheckAuth(r *http.Request, secretKey string) (string, []string, bool) {
 }
 
 func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, secretKey string) (string, []string, error) {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie(SessionCookieName)
 
 	if err != nil || cookie.Value == "" {
 		http.Redirect(w, r, oauth2Config.AuthCodeURL("state"), http.StatusFound)
