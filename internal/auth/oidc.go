@@ -91,26 +91,7 @@ func parseAndValidateJWT(tokenString string, secretKey string) (sub string, perm
 func CheckAuth(r *http.Request, secretKey string) (string, []string, bool) {
 	cookie, err := r.Cookie("session")
 	if err != nil || cookie.Value == "" {
-		// Generate a secure random state parameter
-		state, err := generateSecureState()
-		if err != nil {
-			return "", nil, fmt.Errorf("failed to generate state: %w", err)
-		}
-		
-		// Store state in a secure cookie
-		stateCookie := http.Cookie{
-			Name:     "oauth_state",
-			Value:    state,
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   600, // 10 minutes - short-lived for security
-			Path:     "/",
-		}
-		http.SetCookie(w, &stateCookie)
-		
-		http.Redirect(w, r, oauth2Config.AuthCodeURL(state), http.StatusFound)
-		return "", nil, err
+		return "", nil, false
 	}
 
 	sub, perms, err := parseAndValidateJWT(cookie.Value, secretKey)
