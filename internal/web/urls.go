@@ -2,12 +2,14 @@ package web
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"embed"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"log/slog"
-	"math/rand"
+	mathrand "math/rand"
 	"net/http"
 	"strconv"
 
@@ -23,6 +25,7 @@ type Databases struct {
 
 const (
 	sessionCookieName = "session"
+	stateCookieName   = "oauth_state"
 )
 
 var oidcConfig *auth.OIDCConfig
@@ -209,8 +212,17 @@ func motdGenerator() string {
 		"Moo Deng!",
 		"Money is really just, like, a social construct, man",
 		"Receipts 👏 Proof 👏 Timeline 👏 Screenshots 👏"}
-	randomIndex := rand.Intn(len(options))
+	randomIndex := mathrand.Intn(len(options))
 	return options[randomIndex]
+}
+
+// generateSecureState generates a cryptographically secure random state string
+func generateSecureState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate random state: %w", err)
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 // OIDC handlers
@@ -218,7 +230,26 @@ func oidcLoginPage(w http.ResponseWriter, r *http.Request, databases Databases) 
 	if oidcConfig == nil {
 		return fmt.Errorf("OIDC not configured")
 	}
-	http.Redirect(w, r, oidcConfig.OAuth2Config.AuthCodeURL("state"), http.StatusFound)
+	
+	// Generate a secure random state parameter
+	state, err := generateSecureState()
+	if err != nil {
+		return fmt.Errorf("failed to generate state: %w", err)
+	}
+	
+	// Store state in a secure cookie
+	stateCookie := http.Cookie{
+		Name:     stateCookieName,
+		Value:    state,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   600, // 10 minutes - short-lived for security
+		Path:     "/",
+	}
+	http.SetCookie(w, &stateCookie)
+	
+	http.Redirect(w, r, oidcConfig.OAuth2Config.AuthCodeURL(state), http.StatusFound)
 	return nil
 }
 
@@ -226,6 +257,28 @@ func oidcCallbackPage(w http.ResponseWriter, r *http.Request, databases Database
 	if oidcConfig == nil {
 		return fmt.Errorf("OIDC not configured")
 	}
+	
+	// Validate state parameter to prevent CSRF attacks
+	stateCookie, err := r.Cookie(stateCookieName)
+	if err != nil {
+		slog.Error("State cookie not found", "error", err)
+		return fmt.Errorf("invalid state: cookie not found")
+	}
+	
+	stateParam := r.URL.Query().Get("state")
+	if stateParam == "" || stateParam != stateCookie.Value {
+		slog.Error("State mismatch", "expected", stateCookie.Value, "got", stateParam)
+		return fmt.Errorf("invalid state: CSRF check failed")
+	}
+	
+	// Clear the state cookie after validation
+	clearStateCookie := http.Cookie{
+		Name:     stateCookieName,
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &clearStateCookie)
 	
 	env := config.GetEnv()
 	ctx := context.Background()

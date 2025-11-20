@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -91,7 +93,25 @@ func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, se
 	cookie, err := r.Cookie("session")
 
 	if err != nil || cookie.Value == "" {
-		http.Redirect(w, r, oauth2Config.AuthCodeURL("state"), http.StatusFound)
+		// Generate a secure random state parameter
+		state, err := generateSecureState()
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to generate state: %w", err)
+		}
+		
+		// Store state in a secure cookie
+		stateCookie := http.Cookie{
+			Name:     "oauth_state",
+			Value:    state,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   600, // 10 minutes - short-lived for security
+			Path:     "/",
+		}
+		http.SetCookie(w, &stateCookie)
+		
+		http.Redirect(w, r, oauth2Config.AuthCodeURL(state), http.StatusFound)
 		return "", nil, err
 	}
 
@@ -195,6 +215,15 @@ func (c *OIDCConfig) HandleCallback(ctx context.Context, r *http.Request) (strin
 		return claims.Email, nil
 	}
 	return claims.Sub, nil
+}
+
+// generateSecureState generates a cryptographically secure random state string
+func generateSecureState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate random state: %w", err)
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 // GetPermissionsFromHive fetches permissions from Hive for the given user
