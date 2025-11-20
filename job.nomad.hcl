@@ -4,12 +4,6 @@ job "gordian" {
   type = "service"
 
   group "gordian" {
-    network {
-      port "http" {
-        to = 3000 # hardcoded (config option never used, see #32)
-      }
-    }
-
     service {
       name     = "gordian"
       port     = "http"
