@@ -222,6 +222,10 @@ func GetPermissionsFromHive(user, hiveURL, hiveToken string) ([]string, error) {
 	}
 	defer userPerms.Body.Close()
 
+	if userPerms.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("hive returned non-OK status: %d %s", userPerms.StatusCode, http.StatusText(userPerms.StatusCode))
+	}
+
 	type permObj struct {
 		ID string `json:"id"`
 	}
