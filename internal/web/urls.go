@@ -255,7 +255,7 @@ func oidcCallbackPage(w http.ResponseWriter, r *http.Request, databases Database
 		Name:     sessionCookieName,
 		Value:    tokenString,
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   86400 * 7, // 7 days
 		Path:     "/",
