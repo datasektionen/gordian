@@ -218,7 +218,26 @@ func oidcLoginPage(w http.ResponseWriter, r *http.Request, databases Databases) 
 	if oidcConfig == nil {
 		return fmt.Errorf("OIDC not configured")
 	}
-	http.Redirect(w, r, oidcConfig.OAuth2Config.AuthCodeURL("state"), http.StatusFound)
+	
+	// Generate random state token
+	state, err := auth.GenerateStateToken()
+	if err != nil {
+		return fmt.Errorf("failed to generate state token: %w", err)
+	}
+	
+	// Store state in secure cookie
+	stateCookie := http.Cookie{
+		Name:     "oidc_state",
+		Value:    state,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   600, // 10 minutes - enough time for auth flow
+		Path:     "/",
+	}
+	http.SetCookie(w, &stateCookie)
+	
+	http.Redirect(w, r, oidcConfig.OAuth2Config.AuthCodeURL(state), http.StatusFound)
 	return nil
 }
 
@@ -236,6 +255,15 @@ func oidcCallbackPage(w http.ResponseWriter, r *http.Request, databases Database
 		slog.Error("OIDC callback failed", "error", err)
 		return fmt.Errorf("authentication failed: %w", err)
 	}
+	
+	// Clear the state cookie after successful validation
+	stateCookie := http.Cookie{
+		Name:     "oidc_state",
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &stateCookie)
 	
 	// Fetch permissions from Hive
 	perms, err := auth.GetPermissionsFromHive(user, env.HiveURL, env.HiveToken)

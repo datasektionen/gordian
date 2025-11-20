@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +17,15 @@ import (
 type OIDCConfig struct {
 	OAuth2Config oauth2.Config
 	Verifier     *oidc.IDTokenVerifier
+}
+
+// GenerateStateToken creates a cryptographically secure random state token
+func GenerateStateToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate random state: %w", err)
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 func InitOIDC(ctx context.Context, providerURL, clientID, clientSecret, redirectURL string) (*OIDCConfig, error) {
@@ -91,7 +102,25 @@ func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, se
 	cookie, err := r.Cookie("session")
 
 	if err != nil || cookie.Value == "" {
-		http.Redirect(w, r, oauth2Config.AuthCodeURL("state"), http.StatusFound)
+		// Generate random state token
+		state, err := GenerateStateToken()
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to generate state token: %w", err)
+		}
+		
+		// Store state in secure cookie
+		stateCookie := http.Cookie{
+			Name:     "oidc_state",
+			Value:    state,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   600, // 10 minutes
+			Path:     "/",
+		}
+		http.SetCookie(w, &stateCookie)
+		
+		http.Redirect(w, r, oauth2Config.AuthCodeURL(state), http.StatusFound)
 		return "", nil, err
 	}
 
@@ -155,6 +184,23 @@ func CreateSessionToken(sub string, permissions []string, secretKey string) (str
 
 // CallbackHandler handles the OIDC callback
 func (c *OIDCConfig) HandleCallback(ctx context.Context, r *http.Request) (string, error) {
+	// Validate state parameter to prevent CSRF attacks
+	state := r.URL.Query().Get("state")
+	if state == "" {
+		return "", fmt.Errorf("no state in callback")
+	}
+	
+	// Retrieve state from cookie
+	stateCookie, err := r.Cookie("oidc_state")
+	if err != nil {
+		return "", fmt.Errorf("state cookie not found: %w", err)
+	}
+	
+	// Validate that the state matches
+	if state != stateCookie.Value {
+		return "", fmt.Errorf("state parameter mismatch: potential CSRF attack")
+	}
+	
 	code := r.URL.Query().Get("code")
 	if code == "" {
 		return "", fmt.Errorf("no code in callback")
