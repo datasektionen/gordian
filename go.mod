@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/coreos/go-oidc/v3 v3.11.0
-	github.com/go-jose/go-jose/v4 v4.0.2
+	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
