@@ -12,6 +12,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const sessionCookieName = "session"
+
 type OIDCConfig struct {
 	OAuth2Config oauth2.Config
 	Verifier     *oidc.IDTokenVerifier
@@ -46,7 +48,7 @@ func InitOIDC(ctx context.Context, providerURL, clientID, clientSecret, redirect
 
 // CheckAuth checks if user is authenticated without redirecting
 func CheckAuth(r *http.Request, secretKey string) (string, []string, bool) {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil || cookie.Value == "" {
 		return "", nil, false
 	}
@@ -88,7 +90,7 @@ func CheckAuth(r *http.Request, secretKey string) (string, []string, bool) {
 }
 
 func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, secretKey string) (string, []string, error) {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie(sessionCookieName)
 
 	if err != nil || cookie.Value == "" {
 		http.Redirect(w, r, oauth2Config.AuthCodeURL("state"), http.StatusFound)
