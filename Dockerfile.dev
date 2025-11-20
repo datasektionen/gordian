@@ -8,16 +8,15 @@ RUN apk add nginx
 WORKDIR /src
 
 COPY go.* ./
+COPY . . 
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target=/root/.cache/go-build/ \
     go mod download -x
-    
-    COPY . .
 
-    RUN echo "nginx &" >> run.sh
-    RUN echo "go run ." >> run.sh
-    RUN chmod +x run.sh
+RUN echo "nginx &" >> run.sh
+RUN echo "go run ." >> run.sh
+RUN chmod +x run.sh
 
 FROM code AS build
 
