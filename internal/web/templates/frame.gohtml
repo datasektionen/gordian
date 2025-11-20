@@ -10,7 +10,7 @@
     <div id="content">
         <table>
             <tr style="background-color: rgb(176,190,197) !important;">
-                <th>Nämnd/Projekt</th>
+                <th>Resultatställe</th>
                 <th class = "hide-on-mobile">Intäkter</th>
                 <th class = "hide-on-mobile">Utgifter</th>
                 <th class = "hide-on-mobile hide-on-half-desktop">Varav internt</th>
@@ -37,6 +37,30 @@
                     </td>
                     <td class="{{if gt $committeeframeline.FrameLineResult 0}} positive {{else if lt $committeeframeline.FrameLineResult 0}} negative {{else}} net{{end}}">
                         {{formatMoney $committeeframeline.FrameLineResult}} kr
+                    </td>
+                </tr>
+            {{end}}
+            <tr style="background-color: rgb(207,216,220) !important;">
+                <th>Partitioner</th>
+                <th class = "hide-on-mobile"></th>
+                <th class = "hide-on-mobile"></th>
+                <th class = "hide-on-mobile hide-on-half-desktop"></th>
+                <th></th>
+            </tr>
+            {{range $_, $partitionframeline := .partitionframelines}}
+                <tr>
+                    <td >{{$partitionframeline.FrameLineName}}</td>
+                    <td class = "hide-on-mobile {{if gt $partitionframeline.FrameLineIncome 0}} positive {{else if lt $partitionframeline.FrameLineIncome 0}} negative {{else}} net{{end}}">
+                        {{formatMoney $partitionframeline.FrameLineIncome}} kr
+                    </td>
+                    <td class = "hide-on-mobile {{if gt $partitionframeline.FrameLineExpense 0}} positive {{else if lt $partitionframeline.FrameLineExpense 0}} negative {{else}} net{{end}}">
+                        {{formatMoney $partitionframeline.FrameLineExpense}} kr
+                    </td>
+                    <td class = "hide-on-mobile hide-on-half-desktop {{if gt $partitionframeline.FrameLineInternal 0}} positive {{else if lt $partitionframeline.FrameLineInternal 0}} negative {{else}} net{{end}}">
+                        {{formatMoney $partitionframeline.FrameLineInternal}} kr
+                    </td>
+                    <td class="{{if gt $partitionframeline.FrameLineResult 0}} positive {{else if lt $partitionframeline.FrameLineResult 0}} negative {{else}} net{{end}}">
+                        {{formatMoney $partitionframeline.FrameLineResult}} kr
                     </td>
                 </tr>
             {{end}}
@@ -89,26 +113,11 @@
             </tr>
             {{end}}
             <tr style="background-color: rgb(207,216,220) !important;">
-                <th>Totalt</th>
+                <th>Summor</th>
                 <th class = "hide-on-mobile"></th>
                 <th class = "hide-on-mobile"></th>
                 <th class = "hide-on-mobile hide-on-half-desktop"></th>
                 <th></th>
-            </tr>
-            <tr>
-                <td >{{.totalframeline.FrameLineName}}</td>
-                <td  class = "hide-on-mobile {{if gt .totalframeline.FrameLineIncome 0}} positive {{else if lt .totalframeline.FrameLineIncome 0}} negative {{else}} net{{end}}">
-                    {{formatMoney .totalframeline.FrameLineIncome}} kr
-                </td>
-                <td class = "hide-on-mobile {{if gt .totalframeline.FrameLineExpense 0}} positive {{else if lt .totalframeline.FrameLineExpense 0}} negative {{else}} net{{end}}">
-                    {{formatMoney .totalframeline.FrameLineExpense}} kr
-                </td>
-                <td class = "hide-on-mobile hide-on-half-desktop  {{if gt .totalframeline.FrameLineInternal 0}} positive {{else if lt .totalframeline.FrameLineInternal 0}} negative {{else}} net{{end}}">
-                    {{formatMoney .totalframeline.FrameLineInternal}} kr
-                </td>
-                <td class=" {{if gt .totalframeline.FrameLineResult 0}} positive {{else if lt .totalframeline.FrameLineResult 0}} negative {{else}} net{{end}}">
-                    {{formatMoney .totalframeline.FrameLineResult}} kr
-                </td>
             </tr>
             <tr>
                 <td >{{.sumcommitteeframeline.FrameLineName}}</td>
@@ -123,6 +132,21 @@
                 </td>
                 <td class="{{if gt .sumcommitteeframeline.FrameLineResult 0}} positive {{else if lt .sumcommitteeframeline.FrameLineResult 0}} negative {{else}} net{{end}}">
                     {{formatMoney .sumcommitteeframeline.FrameLineResult}} kr
+                </td>
+            </tr>
+            <tr>
+                <td >{{.sumpartitionframeline.FrameLineName}}</td>
+                <td  class = "hide-on-mobile {{if gt .sumpartitionframeline.FrameLineIncome 0}} positive {{else if lt .sumpartitionframeline.FrameLineIncome 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .sumpartitionframeline.FrameLineIncome}} kr
+                </td>
+                <td  class = "hide-on-mobile  {{if gt .sumpartitionframeline.FrameLineExpense 0}} positive {{else if lt .sumpartitionframeline.FrameLineExpense 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .sumpartitionframeline.FrameLineExpense}} kr
+                </td>
+                <td class = "hide-on-mobile hide-on-half-desktop  {{if gt .sumpartitionframeline.FrameLineInternal 0}} positive {{else if lt .sumpartitionframeline.FrameLineInternal 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .sumpartitionframeline.FrameLineInternal}} kr
+                </td>
+                <td class="{{if gt .sumpartitionframeline.FrameLineResult 0}} positive {{else if lt .sumpartitionframeline.FrameLineResult 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .sumpartitionframeline.FrameLineResult}} kr
                 </td>
             </tr>
             <tr>
@@ -155,7 +179,30 @@
                     {{formatMoney .sumotherframeline.FrameLineResult}} kr
                 </td>
             </tr>
+            <tr style="background-color: rgb(207,216,220) !important;">
+                <th>Totalt</th>
+                <th class = "hide-on-mobile"></th>
+                <th class = "hide-on-mobile"></th>
+                <th class = "hide-on-mobile hide-on-half-desktop"></th>
+                <th></th>
+            </tr>
+            <tr>
+                <td >{{.totalframeline.FrameLineName}}</td>
+                <td  class = "hide-on-mobile {{if gt .totalframeline.FrameLineIncome 0}} positive {{else if lt .totalframeline.FrameLineIncome 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .totalframeline.FrameLineIncome}} kr
+                </td>
+                <td class = "hide-on-mobile {{if gt .totalframeline.FrameLineExpense 0}} positive {{else if lt .totalframeline.FrameLineExpense 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .totalframeline.FrameLineExpense}} kr
+                </td>
+                <td class = "hide-on-mobile hide-on-half-desktop  {{if gt .totalframeline.FrameLineInternal 0}} positive {{else if lt .totalframeline.FrameLineInternal 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .totalframeline.FrameLineInternal}} kr
+                </td>
+                <td class=" {{if gt .totalframeline.FrameLineResult 0}} positive {{else if lt .totalframeline.FrameLineResult 0}} negative {{else}} net{{end}}">
+                    {{formatMoney .totalframeline.FrameLineResult}} kr
+                </td>
+            </tr>
         </table>
+        <p>Summan för projekt och totalt räknar inte med projekt vars huvudakliga verksamhet faller utanför det nuvarande året</p>
     </div>
 </div>
 <footer class="footer-toolbar">

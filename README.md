@@ -98,7 +98,7 @@ system, Cost centres, Secondary cost centres and Budget lines.
 
 ## Cost Centre
 
-A _Cost Centre_ is called _Resultatställe_ in Swedish. It can be typed as a Project (Projekt), Committee (Nämnd) or Other (Övrigt).
+A _Cost Centre_ is called _Resultatställe_ in Swedish. It can be typed as a Project (Projekt), ProjectX (Projekt vars budget inte påverkar året), Partition (Partition), Committee (Nämnd) or Other (Övrigt).
 They are the main budget divisions.
 
 ## Secondary cost centre

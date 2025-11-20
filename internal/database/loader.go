@@ -10,7 +10,7 @@ import (
 
 func SaveBudget(fileReader io.Reader, db *sql.DB) error {
 	fmt.Println("You have very many money")
-	//testBudget := "test/Budget_2024.xlsx"
+	//testBudget := "test/Budget_2025.xlsx"
 	costCentres, secondaryCostCentres, budgetLines, err := excel.ReadExcel(fileReader)
 
 	if err != nil {

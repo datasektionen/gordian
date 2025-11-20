@@ -14,6 +14,7 @@ type FrameLine struct {
 	FrameLineExpense  int
 	FrameLineInternal int
 	FrameLineResult   int
+	FrameLineType     string
 }
 
 func framePage(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error {
@@ -21,17 +22,19 @@ func framePage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 	if err != nil {
 		return fmt.Errorf("failed get scan budget lines information from database: %v", err)
 	}
-	committeeFrameLines, projectFrameLines, otherFrameLines, totalFrameLine, sumCommitteeFrameLine, sumProjectFrameLine, sumOtherFrameLine, err := generateFrameLines(budgetLines)
+	committeeFrameLines, partitionFrameLines, projectFrameLines, otherFrameLines, totalFrameLine, sumCommitteeFrameLine, sumPartitionFrameLine, sumProjectFrameLine, sumOtherFrameLine, err := generateFrameLines(budgetLines)
 	if err != nil {
 		return fmt.Errorf("failed to generate frame budget lines: %v", err)
 	}
 	if err := templates.ExecuteTemplate(w, "frame.gohtml", map[string]any{
 		"motd":                  motdGenerator(),
 		"committeeframelines":   committeeFrameLines,
+		"partitionframelines":   partitionFrameLines,
 		"projectframelines":     projectFrameLines,
 		"otherframelines":       otherFrameLines,
 		"totalframeline":        totalFrameLine,
 		"sumcommitteeframeline": sumCommitteeFrameLine,
+		"sumpartitionframeline": sumPartitionFrameLine,
 		"sumprojectframeline":   sumProjectFrameLine,
 		"sumotherframeline":     sumOtherFrameLine,
 		"permissions":           perms,
@@ -81,17 +84,20 @@ func getFrameLines(db *sql.DB) ([]excel.BudgetLine, error) {
 	return frameLines, nil
 }
 
-func generateFrameLines(frameLines []excel.BudgetLine) ([]FrameLine, []FrameLine, []FrameLine, FrameLine, FrameLine, FrameLine, FrameLine, error) {
+func generateFrameLines(frameLines []excel.BudgetLine) ([]FrameLine, []FrameLine, []FrameLine, []FrameLine, FrameLine, FrameLine, FrameLine, FrameLine, FrameLine, error) {
 	var committeeFrameLines []FrameLine
+	var partitionFrameLines []FrameLine
 	var projectFrameLines []FrameLine
 	var otherFrameLines []FrameLine
 	var totalFrameLine FrameLine
 	var sumCommitteeFrameLine FrameLine
 	var sumProjectFrameLine FrameLine
 	var sumOtherFrameLine FrameLine
+	var sumPartitionFrameLine FrameLine
 
 	totalFrameLine.FrameLineName = "Totalt"
 	sumCommitteeFrameLine.FrameLineName = "Summa nämnder"
+	sumPartitionFrameLine.FrameLineName = "Summa partitioner"
 	sumProjectFrameLine.FrameLineName = "Summa projekt"
 	sumOtherFrameLine.FrameLineName = "Summa övrigt"
 
@@ -119,22 +125,30 @@ func generateFrameLines(frameLines []excel.BudgetLine) ([]FrameLine, []FrameLine
 
 		frameLineResult = frameLineIncome + frameLineExpense
 
-		reconstructedFrameLine := FrameLine{frameLineName, frameLineIncome, frameLineExpense, frameLineInternal, frameLineResult}
+		frameLineType := frameLine.CostCentreType
 
-		totalFrameLine.FrameLineIncome += frameLineIncome
-		totalFrameLine.FrameLineExpense += frameLineExpense
-		totalFrameLine.FrameLineInternal += frameLineInternal
-		totalFrameLine.FrameLineResult += frameLineResult
+		reconstructedFrameLine := FrameLine{frameLineName, frameLineIncome, frameLineExpense, frameLineInternal, frameLineResult, frameLineType}
+
+		if frameLineType != "projectX" {
+			totalFrameLine.FrameLineIncome += frameLineIncome
+			totalFrameLine.FrameLineExpense += frameLineExpense
+			totalFrameLine.FrameLineInternal += frameLineInternal
+			totalFrameLine.FrameLineResult += frameLineResult
+		}
 
 		switch frameLine.CostCentreType {
 		case "committee":
 			committeeFrameLines = append(committeeFrameLines, reconstructedFrameLine)
+		case "partition":
+			partitionFrameLines = append(partitionFrameLines, reconstructedFrameLine)
 		case "project":
+			projectFrameLines = append(projectFrameLines, reconstructedFrameLine)
+		case "projectX":
 			projectFrameLines = append(projectFrameLines, reconstructedFrameLine)
 		case "other":
 			otherFrameLines = append(otherFrameLines, reconstructedFrameLine)
 		default:
-			return nil, nil, nil, FrameLine{}, FrameLine{}, FrameLine{}, FrameLine{}, fmt.Errorf("faulty cost centre type found when splitting")
+			return nil, nil, nil, nil, FrameLine{}, FrameLine{}, FrameLine{}, FrameLine{}, FrameLine{}, fmt.Errorf("faulty cost centre type found when splitting")
 		}
 	}
 
@@ -145,7 +159,17 @@ func generateFrameLines(frameLines []excel.BudgetLine) ([]FrameLine, []FrameLine
 		sumCommitteeFrameLine.FrameLineResult += committeeFrameLine.FrameLineResult
 	}
 
+	for _, partitionFrameLine := range partitionFrameLines {
+		sumPartitionFrameLine.FrameLineIncome += partitionFrameLine.FrameLineIncome
+		sumPartitionFrameLine.FrameLineExpense += partitionFrameLine.FrameLineExpense
+		sumPartitionFrameLine.FrameLineInternal += partitionFrameLine.FrameLineInternal
+		sumPartitionFrameLine.FrameLineResult += partitionFrameLine.FrameLineResult
+	}
+
 	for _, ProjectFrameLine := range projectFrameLines {
+		if ProjectFrameLine.FrameLineType == "projectX" {
+			continue
+		}
 		sumProjectFrameLine.FrameLineIncome += ProjectFrameLine.FrameLineIncome
 		sumProjectFrameLine.FrameLineExpense += ProjectFrameLine.FrameLineExpense
 		sumProjectFrameLine.FrameLineInternal += ProjectFrameLine.FrameLineInternal
@@ -159,5 +183,5 @@ func generateFrameLines(frameLines []excel.BudgetLine) ([]FrameLine, []FrameLine
 		sumOtherFrameLine.FrameLineResult += OtherFrameLine.FrameLineResult
 	}
 
-	return committeeFrameLines, projectFrameLines, otherFrameLines, totalFrameLine, sumCommitteeFrameLine, sumProjectFrameLine, sumOtherFrameLine, nil
+	return committeeFrameLines, partitionFrameLines, projectFrameLines, otherFrameLines, totalFrameLine, sumCommitteeFrameLine, sumPartitionFrameLine, sumProjectFrameLine, sumOtherFrameLine, nil
 }

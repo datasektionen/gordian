@@ -176,6 +176,10 @@ h1 {
   text-overflow: ellipsis;
 }
 
+.btn-group button.project-x {
+  border: 2px solid #666;
+}
+
 .centering {
   text-align: center;
 }
