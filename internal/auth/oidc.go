@@ -46,52 +46,50 @@ func InitOIDC(ctx context.Context, providerURL, clientID, clientSecret, redirect
 	}, nil
 }
 
-// CheckAuth checks if user is authenticated without redirecting
-func CheckAuth(r *http.Request, secretKey string) (string, []string, bool) {
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		return "", nil, false
-	}
-
-	token, err := jwt.Parse(cookie.Value, func(token *jwt.Token) (interface{}, error) {
+// parseAndValidateJWT parses and validates a JWT token string and extracts the subject and permissions
+func parseAndValidateJWT(tokenString string, secretKey string) (sub string, permissions []string, err error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("there's an error with the signing method")
 		}
 		return []byte(secretKey), nil
 	})
 
-	if err != nil || !token.Valid {
-		return "", nil, false
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to parse JWT: %w", err)
+	}
+
+	if !token.Valid {
+		return "", nil, fmt.Errorf("invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", nil, false
+		return "", nil, fmt.Errorf("failed to parse claims")
 	}
 
-	sub, ok := claims["sub"].(string)
+	sub, ok = claims["sub"].(string)
 	if !ok {
-		return "", nil, false
+		return "", nil, fmt.Errorf("sub claim not found or invalid")
 	}
 
 	// Extract permissions from claims
-	var perms []string
 	if permsInterface, ok := claims["permissions"]; ok {
 		if permsList, ok := permsInterface.([]interface{}); ok {
 			for _, p := range permsList {
 				if permStr, ok := p.(string); ok {
-					perms = append(perms, permStr)
+					permissions = append(permissions, permStr)
 				}
 			}
 		}
 	}
 
-	return sub, perms, true
+	return sub, permissions, nil
 }
 
-func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, secretKey string) (string, []string, error) {
+// CheckAuth checks if user is authenticated without redirecting
+func CheckAuth(r *http.Request, secretKey string) (string, []string, bool) {
 	cookie, err := r.Cookie("session")
-
 	if err != nil || cookie.Value == "" {
 		// Generate a secure random state parameter
 		state, err := generateSecureState()
@@ -115,41 +113,25 @@ func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, se
 		return "", nil, err
 	}
 
-	token, err := jwt.Parse(cookie.Value, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("there's an error with the signing method")
-		}
-		return []byte(secretKey), nil
-	})
-
+	sub, perms, err := parseAndValidateJWT(cookie.Value, secretKey)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to parse JWT: %w", err)
+		return "", nil, false
 	}
 
-	if !token.Valid {
-		return "", nil, fmt.Errorf("invalid token")
+	return sub, perms, true
+}
+
+func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, secretKey string) (string, []string, error) {
+	cookie, err := r.Cookie("session")
+
+	if err != nil || cookie.Value == "" {
+		http.Redirect(w, r, oauth2Config.AuthCodeURL("state"), http.StatusFound)
+		return "", nil, err
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return "", nil, fmt.Errorf("failed to parse claims")
-	}
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		return "", nil, fmt.Errorf("sub claim not found or invalid")
-	}
-
-	// Extract permissions from claims
-	var perms []string
-	if permsInterface, ok := claims["permissions"]; ok {
-		if permsList, ok := permsInterface.([]interface{}); ok {
-			for _, p := range permsList {
-				if permStr, ok := p.(string); ok {
-					perms = append(perms, permStr)
-				}
-			}
-		}
+	sub, perms, err := parseAndValidateJWT(cookie.Value, secretKey)
+	if err != nil {
+		return "", nil, err
 	}
 
 	return sub, perms, nil
@@ -233,7 +215,7 @@ func GetPermissionsFromHive(user, hiveURL, hiveToken string) ([]string, error) {
 		return nil, fmt.Errorf("failed to create request for hive: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+hiveToken)
-	
+
 	userPerms, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("no response from hive: %w", err)
