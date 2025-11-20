@@ -104,7 +104,7 @@ configs:
           first_name: Diana
           family_name: Datalog
           year_tag: D-83
-        - ug_kth_id: yet-anouther-id
+        - ug_kth_id: yet-another-id
           kth_id: marmed
           email: marmed@kth.se
           first_name: Martin
