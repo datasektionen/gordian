@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
@@ -135,9 +136,13 @@ func Auth(w http.ResponseWriter, r *http.Request, oauth2Config oauth2.Config, se
 }
 
 func CreateSessionToken(sub string, permissions []string, secretKey string) (string, error) {
+	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":         sub,
 		"permissions": permissions,
+		"iat":         now.Unix(),
+		"nbf":         now.Unix(),
+		"exp":         now.Add(7 * 24 * time.Hour).Unix(), // 7 days
 	})
 
 	tokenString, err := token.SignedString([]byte(secretKey))
