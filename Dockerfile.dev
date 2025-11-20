@@ -28,5 +28,5 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 FROM alpine:${ALPINE_VERSION}
 
 COPY --from=build /bin/server /bin/
-
+COPY --from=code /src/run.sh ./
 CMD [ "./run.sh" ]
