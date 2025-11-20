@@ -18,9 +18,29 @@ type OIDCConfig struct {
 }
 
 func InitOIDC(ctx context.Context, providerURL, clientID, clientSecret, redirectURL string) (*OIDCConfig, error) {
-	provider, err := oidc.NewProvider(ctx, providerURL)
+	var provider *oidc.Provider
+	var err error
+	
+	// Retry OIDC provider initialization with exponential backoff
+	maxRetries := 5
+	baseDelay := 2 * time.Second
+	
+	for i := 0; i < maxRetries; i++ {
+		provider, err = oidc.NewProvider(ctx, providerURL)
+		if err == nil {
+			break
+		}
+		
+		if i < maxRetries-1 {
+			delay := baseDelay * (1 << uint(i)) // 2s, 4s, 8s, 16s, 32s
+			fmt.Printf("Failed to connect to OIDC provider (attempt %d/%d): %v. Retrying in %v...\n", 
+				i+1, maxRetries, err, delay)
+			time.Sleep(delay)
+		}
+	}
+	
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OIDC provider: %w", err)
+		return nil, fmt.Errorf("failed to create OIDC provider after %d retries: %w", maxRetries, err)
 	}
 
 	// Configure an OpenID Connect aware OAuth2 client.

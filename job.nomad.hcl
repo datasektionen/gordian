@@ -19,6 +19,13 @@ job "gordian" {
         "traefik.http.routers.gordian.rule=Host(`budget.datasektionen.se`)",
         "traefik.http.routers.gordian.tls.certresolver=default",
       ]
+      
+      check {
+        type     = "http"
+        path     = "/health"
+        interval = "10s"
+        timeout  = "2s"
+      }
     }
 
     task "gordian" {

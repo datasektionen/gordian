@@ -56,6 +56,10 @@ func Mount(mux *http.ServeMux, databases Databases) error {
 		return err
 	}
 	mux.Handle("/static/", http.FileServerFS(staticFiles))
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 	mux.Handle("/{$}", authRoute(databases, indexPage, []string{}))
 	mux.Handle("/costcentre/{costCentreIDPath}", authRoute(databases, costCentrePage, []string{}))
 	
