@@ -15,10 +15,10 @@
     <p>Nedan kan du se vad som har spenderats på en viss budgetpost.</p>
 </div>
 <div class="centering">
-    <p>Du kan sortera på både år och nämnd/projekt.</p>
+    <p>Du kan sortera på både år och resultatställe.</p>
 </div>
 <div class="centering">
-    <p>Väljer du ett år så ser du endast de nämnder och projekt som hade kostnader det året.</p>
+    <p>Väljer du ett år så ser du endast de resultatställen som hade kostnader det året.</p>
 </div>
 <div class="centering hide-on-tiny-mobile">
     <p>Väljer du det nuvarande året kan du även se vad som är budgetterat för posterna</p>
@@ -39,7 +39,7 @@
     </div>
     
     <div class="form-field">
-        <label for="costCentreSelect" class="form-label">Nämnd/Projekt:</label>
+        <label for="costCentreSelect" class="form-label">Resultatställe:</label>
         <select name="cc" id="costCentreSelect" class="form-select">
             <option {{if or (eq $.SelectedCC "Alla") (eq $.SelectedCC "")}}selected{{end}}>Alla</option>
             {{range $_, $CC := .CCList}}
@@ -65,7 +65,7 @@
     <div id="content">  
         <table style="table-layout: fixed; width: 100%;">
             <tr style="background-color: rgb(176,190,197) !important;">
-                <th>Nämnd/Projekt</th>
+                <th>Resultatställe/th>
                 <th>Spenderat</th>
                 {{if eq $.CurrentYear $.SelectedYear}}
                     <th class="hide-on-tiny-mobile">Budgeterat</th>

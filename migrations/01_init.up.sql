@@ -16,7 +16,7 @@ CREATE TABLE cost_centres (
     type TEXT NOT NULL,
 	created_at timestamp,
     updated_at timestamp,
-    CONSTRAINT cost_centres_type_check CHECK (type = ANY (ARRAY['committee', 'project', 'other']))
+    CONSTRAINT cost_centres_type_check CHECK (type = ANY (ARRAY['committee', 'project', 'projectX', 'partition', 'other']))
 );
 
 CREATE TABLE secondary_cost_centres (

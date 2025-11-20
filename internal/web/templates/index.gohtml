@@ -16,15 +16,21 @@
                  {{end}}
             </div>
         </div>
-         <div class="costCentre-group">
+        <div class="costCentre-group">
+            <h2> Partitioner </h2>
+            <div class="btn-group">
+                {{range $_,$partition:= .partitions}}
+                 <button onclick="location.href='/costcentre/{{$partition.CostCentreID}}'"> {{$partition.CostCentreName}} </button>
+                 {{end}}
+            </div>
             <h2> Projekt </h2>
                 <div class="btn-group">
                 {{range $_,$project:= .projects}}
-                    <button onclick="location.href='/costcentre/{{$project.CostCentreID}}'"> {{$project.CostCentreName}} </button>
+                    <button class="{{if eq $project.CostCentreType "projectX"}}project-x{{end}}" onclick="location.href='/costcentre/{{$project.CostCentreID}}'"> {{$project.CostCentreName}} </button>
                 {{end}}
             </div>
         </div>
-            <div class="costCentre-group">
+        <div class="costCentre-group">
             <h2> Övrigt </h2>
            <div class="btn-group">
                 {{range $_,$other:= .others}} 

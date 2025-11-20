@@ -3,10 +3,11 @@ package excel
 import (
 	"errors"
 	"fmt"
-	"github.com/xuri/excelize/v2"
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/xuri/excelize/v2"
 )
 
 type CostCentre struct {
@@ -265,8 +266,12 @@ func convertCostCentreTypeToEnglish(costCentreType string) (string, error) {
 	switch strings.ToLower(costCentreType) {
 	case "nämnd":
 		return "committee", nil
+	case "partition":
+		return "partition", nil
 	case "projekt":
 		return "project", nil
+	case "projekt x":
+		return "projectX", nil
 	case "övrigt":
 		return "other", nil
 	default:

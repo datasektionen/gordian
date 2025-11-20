@@ -15,7 +15,7 @@ func indexPage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 	if err != nil {
 		return fmt.Errorf("failed get scan cost centre information from database: %v", err)
 	}
-	committeeCostCentres, projectCostCentres, otherCostCentres, err := splitCostCentresOnType(costCentres)
+	committeeCostCentres, partitionCostCentres, projectCostCentres, otherCostCentres, err := splitCostCentresOnType(costCentres)
 	if err != nil {
 		return fmt.Errorf("failed to split cost centres on type: %v", err)
 	}
@@ -55,6 +55,7 @@ func indexPage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 	if err := templates.ExecuteTemplate(w, "index.gohtml", map[string]any{
 		"motd":        motdGenerator(),
 		"committees":  committeeCostCentres,
+		"partitions":  partitionCostCentres,
 		"projects":    projectCostCentres,
 		"others":      otherCostCentres,
 		"permissions": perms,
@@ -65,21 +66,26 @@ func indexPage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 	return nil
 }
 
-func splitCostCentresOnType(costCentres []excel.CostCentre) ([]excel.CostCentre, []excel.CostCentre, []excel.CostCentre, error) {
+func splitCostCentresOnType(costCentres []excel.CostCentre) ([]excel.CostCentre, []excel.CostCentre, []excel.CostCentre, []excel.CostCentre, error) {
 	var committeeCostCentres []excel.CostCentre
+	var partitionCostCentres []excel.CostCentre
 	var projectCostCentres []excel.CostCentre
 	var otherCostCentres []excel.CostCentre
 	for _, costCentre := range costCentres {
 		switch costCentre.CostCentreType {
 		case "committee":
 			committeeCostCentres = append(committeeCostCentres, costCentre)
+		case "partition":
+			partitionCostCentres = append(partitionCostCentres, costCentre)
 		case "project":
+			projectCostCentres = append(projectCostCentres, costCentre)
+		case "projectX":
 			projectCostCentres = append(projectCostCentres, costCentre)
 		case "other":
 			otherCostCentres = append(otherCostCentres, costCentre)
 		default:
-			return nil, nil, nil, fmt.Errorf("faulty cost centre type found when splitting")
+			return nil, nil, nil, nil, fmt.Errorf("faulty cost centre type found when splitting")
 		}
 	}
-	return committeeCostCentres, projectCostCentres, otherCostCentres, nil
+	return committeeCostCentres, partitionCostCentres, projectCostCentres, otherCostCentres, nil
 }
