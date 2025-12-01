@@ -29,6 +29,7 @@ type ReportBudgetLine struct {
 	BudgetLineName string
 	Total          string
 	Budget         string
+	Remaining      string
 }
 
 type ReportSecondaryCostCentreLine struct {
@@ -36,6 +37,7 @@ type ReportSecondaryCostCentreLine struct {
 	BudgetLinesList         []ReportBudgetLine
 	Total                   string
 	Budget                  string
+	Remaining               string
 }
 
 type ReportCostCentreLine struct {
@@ -43,6 +45,7 @@ type ReportCostCentreLine struct {
 	SecondaryCostCentresList []ReportSecondaryCostCentreLine
 	Total                    string
 	Budget                   string
+	Remaining                string
 }
 
 func getYearsSince2017() []string {
@@ -180,6 +183,7 @@ func findOrAddCostCentre(costCentres *[]ReportCostCentreLine, name string) *Repo
 		SecondaryCostCentresList: []ReportSecondaryCostCentreLine{},
 		Total:                    "0",
 		Budget:                   "0",
+		Remaining:                "0",
 	})
 	return &(*costCentres)[len(*costCentres)-1]
 }
@@ -195,6 +199,7 @@ func findOrAddSecondaryCostCentre(secCostCentres *[]ReportSecondaryCostCentreLin
 		BudgetLinesList:         []ReportBudgetLine{},
 		Total:                   "0",
 		Budget:                  "0",
+		Remaining:               "0",
 	})
 	return &(*secCostCentres)[len(*secCostCentres)-1]
 }
@@ -338,6 +343,14 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			costCentres[i].Budget = ""
 		}
 		
+		// Calculate remaining for cost centre
+		if selectedYear == currentYear && costCentres[i].Budget != "" {
+			remaining, err := calculateRemaining(costCentres[i].Budget, costCentres[i].Total)
+			if err == nil {
+				costCentres[i].Remaining = remaining
+			}
+		}
+		
 		// Filter out empty secondary cost centres
 		filteredSecCostCentres := []ReportSecondaryCostCentreLine{}
 		for j := range costCentres[i].SecondaryCostCentresList {
@@ -352,12 +365,29 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			if costCentres[i].SecondaryCostCentresList[j].Budget == "0" {
 				costCentres[i].SecondaryCostCentresList[j].Budget = ""
 			}
+			
+			// Calculate remaining for secondary cost centre
+			if selectedYear == currentYear && costCentres[i].SecondaryCostCentresList[j].Budget != "" {
+				remaining, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].Budget, costCentres[i].SecondaryCostCentresList[j].Total)
+				if err == nil {
+					costCentres[i].SecondaryCostCentresList[j].Remaining = remaining
+				}
+			}
+			
 			for k := range costCentres[i].SecondaryCostCentresList[j].BudgetLinesList {
 				// Properly capitalize budget line name
 				costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].BudgetLineName = properCapitalize(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].BudgetLineName)
 				
 				if costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget == "0" {
 					costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget = ""
+				}
+				
+				// Calculate remaining for budget line
+				if selectedYear == currentYear && costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget != "" {
+					remaining, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget, costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Total)
+					if err == nil {
+						costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Remaining = remaining
+					}
 				}
 			}
 			
@@ -456,6 +486,32 @@ func makePositive(value string) string {
 	}
 
 	return formatNumber(parsed)
+}
+
+func calculateRemaining(budget, spent string) (string, error) {
+	budget = strings.TrimSpace(budget)
+	spent = strings.TrimSpace(spent)
+
+	if budget == "" || budget == "0" {
+		return "", nil
+	}
+	if spent == "" {
+		spent = "0"
+	}
+
+	// Convert commas back to periods for parsing
+	budget = strings.Replace(budget, ",", ".", 1)
+	spent = strings.Replace(spent, ",", ".", 1)
+
+	budgetVal, err1 := strconv.ParseFloat(budget, 64)
+	spentVal, err2 := strconv.ParseFloat(spent, 64)
+
+	if err1 != nil || err2 != nil {
+		return "", fmt.Errorf("failed to parse values: %v, %v", err1, err2)
+	}
+
+	remaining := budgetVal - spentVal
+	return formatNumber(remaining), nil
 }
 
 // removes unnecessary zeros

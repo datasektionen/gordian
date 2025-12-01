@@ -13,18 +13,17 @@
 <br>
 <div class="centering">
     <p>Nedan kan du se vad som har spenderats på en viss budgetpost.</p>
-</div>
-<div class="centering">
     <p>Du kan sortera på både år och resultatställe.</p>
-</div>
-<div class="centering">
     <p>Väljer du ett år så ser du endast de resultatställen som hade kostnader det året.</p>
+    <p class="hide-on-tiny-mobile">Väljer du det nuvarande året kan du även se vad som är budgetterat för posterna</p>
 </div>
-<div class="centering hide-on-tiny-mobile">
-    <p>Väljer du det nuvarande året kan du även se vad som är budgetterat för posterna</p>
-</div>
+<br>
 <div class="centering">
-<strong>OBS! Räknar endast med kvitton och fakturor i Cashflow</strong>
+    <p><strong>OBS!</strong></p>
+    <p><strong>Räknar endast med kvitton och fakturor i Cashflow</strong></p>
+    <p><strong>Den räknar inte med sektionskort, autogiro eller icke uppladdade fakturor</strong></p>
+    <p><strong>GOrdian kan inte heller antas ha fullständig korrekthet</strong></p>
+    <p><strong>Det är ditt ansvar att se till du tar hänsyn till detta när du använder informationen</strong></p>
 </div>
 <br>
 <form class="centering" id="reportForm">
@@ -69,6 +68,7 @@
                 <th>Spenderat</th>
                 {{if eq $.CurrentYear $.SelectedYear}}
                     <th class="hide-on-tiny-mobile">Budgeterat</th>
+                    <th class="hide-on-tiny-mobile">Rest</th>
                 {{end}}
             </tr>
             <tr style="height: 1em;"></tr>
@@ -86,6 +86,13 @@
                                  -
                              {{end}}
                         </th>
+                        <th class="hide-on-tiny-mobile">
+                             {{if $ReportCostCentreLine.Budget}}
+                                 {{$ReportCostCentreLine.Remaining}} kr
+                             {{else}}
+                                 -
+                             {{end}}
+                        </th>
                     {{end}}
                 </tr>
                 {{range $_, $ReportSecondaryCostCentreLine := $ReportCostCentreLine.SecondaryCostCentresList}}
@@ -98,7 +105,7 @@
                     <tr class="secondary-cost-centre-header {{if not $hasSpentLines}}unspent-section{{end}}" style="background-color: rgb(207,216,220) !important;{{if not $hasSpentLines}} display: none;{{end}}">
                         <th>  
                             {{$ReportSecondaryCostCentreLine.SecondaryCostCentreName}}
-                        </th> 
+                        </th>
                         <th> 
                             {{$ReportSecondaryCostCentreLine.Total}} kr          
                         </th>
@@ -106,6 +113,13 @@
                             <th class="hide-on-tiny-mobile">
                                 {{if $ReportSecondaryCostCentreLine.Budget}}
                                     {{$ReportSecondaryCostCentreLine.Budget}} kr
+                                {{else}}
+                                    -
+                                {{end}}
+                            </th>
+                            <th class="hide-on-tiny-mobile">
+                                {{if $ReportSecondaryCostCentreLine.Budget}}
+                                    {{$ReportSecondaryCostCentreLine.Remaining}} kr
                                 {{else}}
                                     -
                                 {{end}}
@@ -124,6 +138,13 @@
                                 <td class="net hide-on-tiny-mobile">
                                     {{if $ReportBudgetLine.Budget}}
                                         {{$ReportBudgetLine.Budget}} kr
+                                    {{else}}
+                                        -
+                                    {{end}}
+                                </td>
+                                <td class="net hide-on-tiny-mobile">
+                                    {{if $ReportBudgetLine.Budget}}
+                                        {{$ReportBudgetLine.Remaining}} kr
                                     {{else}}
                                         -
                                     {{end}}
