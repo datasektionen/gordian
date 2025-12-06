@@ -221,7 +221,8 @@ func motdGenerator() string {
 		"u¡õcÂðÚmäðýòqÔçSegmentation fault (core dumped)",
 		"Moo Deng!",
 		"Money is really just, like, a social construct, man",
-		"Receipts 👏 Proof 👏 Timeline 👏 Screenshots 👏"}
+		"Receipts 👏 Proof 👏 Timeline 👏 Screenshots 👏",
+		"dAnkan is watching you"}
 	randomIndex := mathrand.Intn(len(options))
 	return options[randomIndex]
 }
