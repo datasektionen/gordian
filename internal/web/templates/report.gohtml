@@ -22,7 +22,8 @@
     <p><strong>OBS!</strong></p>
     <p><strong>Räknar endast med kvitton och fakturor i Cashflow</strong></p>
     <p><strong>Den räknar inte med sektionskort, autogiro eller icke uppladdade fakturor</strong></p>
-    <p><strong>GOrdian kan inte heller antas ha fullständig korrekthet</strong></p>
+    <p><strong>Budgetposter som byter namn eller flyttas kan inte matchas korrekt</strong></p>
+    <p><strong>Därför kan GOrdian inte antas ha fullständig korrekthet</strong></p>
     <p><strong>Det är ditt ansvar att se till du tar hänsyn till detta när du använder informationen</strong></p>
 </div>
 <br>
@@ -54,6 +55,13 @@
         </label>
     </div>
     
+    <div class="form-field" id="overspentCheckboxContainer" {{if not (eq $.CurrentYear $.SelectedYear)}}style="display: none;"{{end}}>
+        <label for="showOverspentCheck" class="form-label">
+            <input type="checkbox" name="showOverspent" id="showOverspentCheck" value="true">
+            Visa endast sprängda budgetposter
+        </label>
+    </div>
+    
     <button class="form-button">
         Visa
     </button>
@@ -73,7 +81,15 @@
             </tr>
             <tr style="height: 1em;"></tr>
             {{range $_, $ReportCostCentreLine := .report }}
-                <tr style="background-color: rgb(176,190,197) !important;">
+                {{$costCentreHasOverspent := false}}
+                {{range $_, $secCC := $ReportCostCentreLine.SecondaryCostCentresList}}
+                    {{range $_, $bl := $secCC.BudgetLinesList}}
+                        {{if $bl.IsOverspent}}
+                            {{$costCentreHasOverspent = true}}
+                        {{end}}
+                    {{end}}
+                {{end}}
+                <tr class="cost-centre-header {{if not $costCentreHasOverspent}}not-overspent-costcentre{{end}}" style="background-color: rgb(176,190,197) !important;">
                     <th>{{$ReportCostCentreLine.CostCentreName}}</th>
                     <th>
                         {{$ReportCostCentreLine.Total}} kr
@@ -86,7 +102,7 @@
                                  -
                              {{end}}
                         </th>
-                        <th class="hide-on-tiny-mobile">
+                        <th class="hide-on-tiny-mobile {{if $ReportCostCentreLine.IsOverspent}}negative{{end}}">
                              {{if $ReportCostCentreLine.Budget}}
                                  {{$ReportCostCentreLine.Remaining}} kr
                              {{else}}
@@ -97,12 +113,16 @@
                 </tr>
                 {{range $_, $ReportSecondaryCostCentreLine := $ReportCostCentreLine.SecondaryCostCentresList}}
                     {{$hasSpentLines := false}}
+                    {{$hasOverspentLines := false}}
                     {{range $_, $bl := $ReportSecondaryCostCentreLine.BudgetLinesList}}
                         {{if ne $bl.Total "0"}}
                             {{$hasSpentLines = true}}
                         {{end}}
+                        {{if $bl.IsOverspent}}
+                            {{$hasOverspentLines = true}}
+                        {{end}}
                     {{end}}
-                    <tr class="secondary-cost-centre-header {{if not $hasSpentLines}}unspent-section{{end}}" style="background-color: rgb(207,216,220) !important;{{if not $hasSpentLines}} display: none;{{end}}">
+                    <tr class="secondary-cost-centre-header {{if not $hasSpentLines}}unspent-section{{end}} {{if not $hasOverspentLines}}not-overspent-secondary{{end}}" style="background-color: rgb(207,216,220) !important;{{if not $hasSpentLines}} display: none;{{end}}">
                         <th>  
                             {{$ReportSecondaryCostCentreLine.SecondaryCostCentreName}}
                         </th>
@@ -117,7 +137,7 @@
                                     -
                                 {{end}}
                             </th>
-                            <th class="hide-on-tiny-mobile">
+                            <th class="hide-on-tiny-mobile {{if $ReportSecondaryCostCentreLine.IsOverspent}}negative{{end}}">
                                 {{if $ReportSecondaryCostCentreLine.Budget}}
                                     {{$ReportSecondaryCostCentreLine.Remaining}} kr
                                 {{else}}
@@ -127,7 +147,7 @@
                         {{end}}
                     </tr>
                     {{range $_, $ReportBudgetLine := $ReportSecondaryCostCentreLine.BudgetLinesList}}
-                        <tr class="budget-line {{if and (eq $.CurrentYear $.SelectedYear) (eq $ReportBudgetLine.Total "0")}}unspent-line{{end}} {{if not $hasSpentLines}}unspent-section{{end}}" {{if and (eq $.CurrentYear $.SelectedYear) (eq $ReportBudgetLine.Total "0")}}style="display: none;"{{end}}>
+                        <tr class="budget-line {{if and (eq $.CurrentYear $.SelectedYear) (or (eq $ReportBudgetLine.Total "0") (eq $ReportBudgetLine.Total "0,0") (eq $ReportBudgetLine.Total "0,00"))}}unspent-line{{end}} {{if not $hasSpentLines}}unspent-section{{end}} {{if not $ReportBudgetLine.IsOverspent}}not-overspent-line{{end}} {{if not $hasOverspentLines}}not-overspent-secondary{{end}}" {{if and (eq $.CurrentYear $.SelectedYear) (or (eq $ReportBudgetLine.Total "0") (eq $ReportBudgetLine.Total "0,0") (eq $ReportBudgetLine.Total "0,00"))}}style="display: none;"{{end}}>
                             <td class="net">  
                                 {{$ReportBudgetLine.BudgetLineName}}
                             </td>
@@ -142,7 +162,7 @@
                                         -
                                     {{end}}
                                 </td>
-                                <td class="net hide-on-tiny-mobile">
+                                <td class="hide-on-tiny-mobile {{if $ReportBudgetLine.IsOverspent}}negative{{else}}net{{end}}">
                                     {{if $ReportBudgetLine.Budget}}
                                         {{$ReportBudgetLine.Remaining}} kr
                                     {{else}}
@@ -152,9 +172,9 @@
                             {{end}}
                         </tr>
                     {{end}}
-                    <tr class="spacer-row {{if not $hasSpentLines}}unspent-section{{end}}" style="height: 1em;{{if not $hasSpentLines}} display: none;{{end}}"></tr>
+                    <tr class="spacer-row {{if not $hasSpentLines}}unspent-section{{end}} {{if not $hasOverspentLines}}not-overspent-secondary{{end}}" style="height: 1em;{{if not $hasSpentLines}} display: none;{{end}}"></tr>
                 {{end}}
-                <tr style="height: 3em;"></tr>
+                <tr class="cost-centre-spacer {{if not $costCentreHasOverspent}}not-overspent-costcentre{{end}}" style="height: 3em;"></tr>
             {{end}}
         </table>
     </div>
@@ -218,6 +238,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Toggle unspent budget lines visibility without reloading the page
     showUnspentCheck.addEventListener('change', function() {
+        // Make mutually exclusive with overspent checkbox
+        const showOverspentCheck = document.getElementById('showOverspentCheck');
+        if (this.checked && showOverspentCheck.checked) {
+            showOverspentCheck.checked = false;
+            // Trigger overspent checkbox change to reset visibility
+            showOverspentCheck.dispatchEvent(new Event('change'));
+        }
+        
         const unspentLines = document.querySelectorAll('.unspent-line');
         const unspentSections = document.querySelectorAll('.unspent-section');
         
@@ -234,6 +262,43 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             unspentSections.forEach(section => {
                 section.style.display = 'none';
+            });
+        }
+    });
+    
+    // Toggle to show only overspent budget lines
+    const showOverspentCheck = document.getElementById('showOverspentCheck');
+    showOverspentCheck.addEventListener('change', function() {
+        // Make mutually exclusive with unspent checkbox
+        if (this.checked && showUnspentCheck.checked) {
+            showUnspentCheck.checked = false;
+            // Trigger unspent checkbox change to reset visibility
+            showUnspentCheck.dispatchEvent(new Event('change'));
+        }
+        
+        const notOverspentLines = document.querySelectorAll('.not-overspent-line');
+        const notOverspentSecondaries = document.querySelectorAll('.not-overspent-secondary');
+        const notOverspentCostCentres = document.querySelectorAll('.not-overspent-costcentre');
+        
+        if (this.checked) {
+            notOverspentLines.forEach(line => {
+                line.style.display = 'none';
+            });
+            notOverspentSecondaries.forEach(secondary => {
+                secondary.style.display = 'none';
+            });
+            notOverspentCostCentres.forEach(costCentre => {
+                costCentre.style.display = 'none';
+            });
+        } else {
+            notOverspentLines.forEach(line => {
+                line.style.display = '';
+            });
+            notOverspentSecondaries.forEach(secondary => {
+                secondary.style.display = '';
+            });
+            notOverspentCostCentres.forEach(costCentre => {
+                costCentre.style.display = '';
             });
         }
     });

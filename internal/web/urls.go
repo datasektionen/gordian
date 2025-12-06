@@ -30,6 +30,16 @@ const (
 
 var oidcConfig *auth.OIDCConfig
 
+// isSecureContext determines if cookies should use Secure flag based on redirect URL
+func isSecureContext() bool {
+	env := config.GetEnv()
+	// Check if redirect URL starts with https://
+	if len(env.OIDCRedirectURL) > 8 && env.OIDCRedirectURL[:8] == "https://" {
+		return true
+	}
+	return false
+}
+
 //go:embed templates/*.gohtml
 var templatesFS embed.FS
 
@@ -242,7 +252,7 @@ func oidcLoginPage(w http.ResponseWriter, r *http.Request, databases Databases) 
 		Name:     stateCookieName,
 		Value:    state,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   isSecureContext(), // Only use Secure flag with HTTPS
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   600, // 10 minutes - short-lived for security
 		Path:     "/",
@@ -308,7 +318,7 @@ func oidcCallbackPage(w http.ResponseWriter, r *http.Request, databases Database
 		Name:     sessionCookieName,
 		Value:    tokenString,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   isSecureContext(), // Only use Secure flag with HTTPS
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   86400 * 7, // 7 days
 		Path:     "/",

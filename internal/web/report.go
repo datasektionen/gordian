@@ -30,6 +30,7 @@ type ReportBudgetLine struct {
 	Total          string
 	Budget         string
 	Remaining      string
+	IsOverspent    bool
 }
 
 type ReportSecondaryCostCentreLine struct {
@@ -38,6 +39,7 @@ type ReportSecondaryCostCentreLine struct {
 	Total                   string
 	Budget                  string
 	Remaining               string
+	IsOverspent             bool
 }
 
 type ReportCostCentreLine struct {
@@ -46,6 +48,7 @@ type ReportCostCentreLine struct {
 	Total                    string
 	Budget                   string
 	Remaining                string
+	IsOverspent              bool
 }
 
 func getYearsSince2017() []string {
@@ -345,9 +348,10 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 		
 		// Calculate remaining for cost centre
 		if selectedYear == currentYear && costCentres[i].Budget != "" {
-			remaining, err := calculateRemaining(costCentres[i].Budget, costCentres[i].Total)
+			remaining, isOverspent, err := calculateRemaining(costCentres[i].Budget, costCentres[i].Total)
 			if err == nil {
 				costCentres[i].Remaining = remaining
+				costCentres[i].IsOverspent = isOverspent
 			}
 		}
 		
@@ -368,9 +372,10 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			
 			// Calculate remaining for secondary cost centre
 			if selectedYear == currentYear && costCentres[i].SecondaryCostCentresList[j].Budget != "" {
-				remaining, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].Budget, costCentres[i].SecondaryCostCentresList[j].Total)
+				remaining, isOverspent, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].Budget, costCentres[i].SecondaryCostCentresList[j].Total)
 				if err == nil {
 					costCentres[i].SecondaryCostCentresList[j].Remaining = remaining
+					costCentres[i].SecondaryCostCentresList[j].IsOverspent = isOverspent
 				}
 			}
 			
@@ -384,9 +389,10 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 				
 				// Calculate remaining for budget line
 				if selectedYear == currentYear && costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget != "" {
-					remaining, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget, costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Total)
+					remaining, isOverspent, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget, costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Total)
 					if err == nil {
 						costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Remaining = remaining
+						costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].IsOverspent = isOverspent
 					}
 				}
 			}
@@ -488,12 +494,12 @@ func makePositive(value string) string {
 	return formatNumber(parsed)
 }
 
-func calculateRemaining(budget, spent string) (string, error) {
+func calculateRemaining(budget, spent string) (string, bool, error) {
 	budget = strings.TrimSpace(budget)
 	spent = strings.TrimSpace(spent)
 
 	if budget == "" || budget == "0" {
-		return "", nil
+		return "", false, nil
 	}
 	if spent == "" {
 		spent = "0"
@@ -507,11 +513,12 @@ func calculateRemaining(budget, spent string) (string, error) {
 	spentVal, err2 := strconv.ParseFloat(spent, 64)
 
 	if err1 != nil || err2 != nil {
-		return "", fmt.Errorf("failed to parse values: %v, %v", err1, err2)
+		return "", false, fmt.Errorf("failed to parse values: %v, %v", err1, err2)
 	}
 
 	remaining := budgetVal - spentVal
-	return formatNumber(remaining), nil
+	isOverspent := remaining < 0
+	return formatNumber(remaining), isOverspent, nil
 }
 
 // removes unnecessary zeros
