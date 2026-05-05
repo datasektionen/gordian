@@ -10,6 +10,7 @@ import (
 	"github.com/datasektionen/GOrdian/internal/database"
 
 	"github.com/datasektionen/GOrdian/internal/web"
+	v1 "github.com/datasektionen/GOrdian/internal/web/api/v1"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -52,5 +53,9 @@ func main() {
 	if err := web.Mount(http.DefaultServeMux, web.Databases{DBCF: dbCF, DBGO: dbGO}); err != nil {
 		panic(err)
 	}
+
+	// Register v1 API routes
+	v1.RegisterRoutes(http.DefaultServeMux, web.Databases{DBCF: dbCF, DBGO: dbGO})
+
 	panic(http.ListenAndServe("0.0.0.0:3000", nil))
 }

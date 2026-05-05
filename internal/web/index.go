@@ -11,7 +11,7 @@ import (
 )
 
 func indexPage(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error {
-	costCentres, err := getCostCentres(databases.DBGO)
+	costCentres, err := GetCostCentres(databases.DBGO)
 	if err != nil {
 		return fmt.Errorf("failed get scan cost centre information from database: %v", err)
 	}
