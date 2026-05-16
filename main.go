@@ -8,6 +8,7 @@ import (
 
 	"github.com/datasektionen/GOrdian/internal/config"
 	"github.com/datasektionen/GOrdian/internal/database"
+	v2 "github.com/datasektionen/GOrdian/internal/web/api/v2"
 
 	"github.com/datasektionen/GOrdian/internal/web"
 	v1 "github.com/datasektionen/GOrdian/internal/web/api/v1"
@@ -56,6 +57,9 @@ func main() {
 
 	// Register v1 API routes
 	v1.RegisterRoutes(http.DefaultServeMux, web.Databases{DBCF: dbCF, DBGO: dbGO})
+
+	// Register v2 API routes
+	v2.RegisterRoutes(http.DefaultServeMux, web.Databases{DBCF: dbCF, DBGO: dbGO})
 
 	panic(http.ListenAndServe("0.0.0.0:3000", nil))
 }

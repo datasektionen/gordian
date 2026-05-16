@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/graphql-go/graphql v0.8.1
 	github.com/lib/pq v1.10.9
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.42.0
@@ -31,6 +32,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/graphql-go/handler v0.2.4 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
