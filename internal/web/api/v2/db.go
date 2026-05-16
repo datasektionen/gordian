@@ -5,12 +5,18 @@ import (
 	"strings"
 )
 
+type Join struct {
+	Table      string
+	Conditions []string
+}
+
 type Query struct {
 	Table      string
 	Fields     []string
 	Conditions []string
 	Args       []any
 	OrderBy    string
+	Joins      []Join
 }
 
 type QueryModifier = func(q *Query)
@@ -29,13 +35,30 @@ func Where(c Condition) QueryModifier {
 	}
 }
 
+// Joins
+
+func InnerJoin(table string, conditions ...string) QueryModifier {
+	return func(q *Query) {
+		q.Joins = append(q.Joins, Join{Table: table, Conditions: conditions})
+	}
+}
+
 // Conditions
 
-func Equals(field string, value any) Condition {
+type Column string
+
+func Equals(val1, val2 any) Condition {
 	return func(q *Query) string {
-		q.Args = append(q.Args, value)
-		return fmt.Sprintf("%s = $%d", field, len(q.Args))
+		return fmt.Sprintf("%s = %s", operand(q, val1), operand(q, val2))
 	}
+}
+
+func operand(q *Query, v any) string {
+	if c, ok := v.(Column); ok {
+		return string(c)
+	}
+	q.Args = append(q.Args, v)
+	return fmt.Sprintf("$%d", len(q.Args))
 }
 
 func buildSql(q *Query) string {
@@ -44,6 +67,12 @@ func buildSql(q *Query) string {
 	b.WriteString(strings.Join(q.Fields, ", "))
 	b.WriteString(" FROM ")
 	b.WriteString(q.Table)
+	for _, j := range q.Joins {
+		b.WriteString(" INNER JOIN ")
+		b.WriteString(j.Table)
+		b.WriteString(" ON ")
+		b.WriteString(strings.Join(j.Conditions, " AND "))
+	}
 	if len(q.Conditions) > 0 {
 		b.WriteString(" WHERE ")
 		b.WriteString(strings.Join(q.Conditions, " AND "))
