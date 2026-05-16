@@ -119,7 +119,7 @@ func TestSelectNoColumnQueryGivesError(t *testing.T) {
 }
 
 func TestSelectInnerJoin(t *testing.T) {
-	stmt, args, err := BuildQuery("budget_lines", Select("budget_lines.name", "secondary_cost_centres.name"), InnerJoin("secondary_cost_centres", "budget_lines.secondary_cost_centre_id = secondary_cost_centres.id"), Where(Equals(Column("budget_lines.name"), "Styrelsemiddag")))
+	stmt, args, err := BuildQuery("budget_lines", Select("budget_lines.name", "secondary_cost_centres.name"), InnerJoin("secondary_cost_centres", Equals(Column("budget_lines.secondary_cost_centre_id"), Column("secondary_cost_centres.id"))), Where(Equals(Column("budget_lines.name"), "Styrelsemiddag")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,6 +148,64 @@ func TestSelectInnerJoin(t *testing.T) {
 	}
 	if got, want := n, 1; got != want {
 		t.Errorf("row count: got %v, want %v", got, want)
+	}
+}
+
+func TestSelectOrderBy(t *testing.T) {
+	stmt, args, err := BuildQuery("budget_lines", Select("id"), OrderBy("id ASC"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, err := sharedDB.Query(stmt, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []int{100, 101, 102, 103, 104, 105, 106, 107}
+	if !slices.Equal(ids, want) {
+		t.Errorf("got %v, want %v", ids, want)
+	}
+}
+
+func TestSelectIn(t *testing.T) {
+	stmt, args, err := BuildQuery("budget_lines", Select("id"), Where(In(Column("secondary_cost_centre_id"), []int{10, 40})), OrderBy("id ASC"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, err := sharedDB.Query(stmt, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []int{100, 106, 107}
+	if !slices.Equal(ids, want) {
+		t.Errorf("got %v, want %v", ids, want)
 	}
 }
 

@@ -3,6 +3,8 @@ package v2
 import (
 	"fmt"
 	"strings"
+
+	"github.com/lib/pq"
 )
 
 type Join struct {
@@ -37,9 +39,21 @@ func Where(c Condition) QueryModifier {
 
 // Joins
 
-func InnerJoin(table string, conditions ...string) QueryModifier {
+func InnerJoin(table string, conditions ...Condition) QueryModifier {
 	return func(q *Query) {
-		q.Joins = append(q.Joins, Join{Table: table, Conditions: conditions})
+		resolved := make([]string, len(conditions))
+		for i, c := range conditions {
+			resolved[i] = c(q)
+		}
+		q.Joins = append(q.Joins, Join{Table: table, Conditions: resolved})
+	}
+}
+
+// Sorting
+
+func OrderBy(orderBy string) QueryModifier {
+	return func(q *Query) {
+		q.OrderBy = orderBy
 	}
 }
 
@@ -50,6 +64,13 @@ type Column string
 func Equals(val1, val2 any) Condition {
 	return func(q *Query) string {
 		return fmt.Sprintf("%s = %s", operand(q, val1), operand(q, val2))
+	}
+}
+
+func In(col any, values any) Condition {
+	return func(q *Query) string {
+		q.Args = append(q.Args, pq.Array(values))
+		return fmt.Sprintf("%s = ANY($%d)", operand(q, col), len(q.Args))
 	}
 }
 
@@ -76,6 +97,10 @@ func buildSql(q *Query) string {
 	if len(q.Conditions) > 0 {
 		b.WriteString(" WHERE ")
 		b.WriteString(strings.Join(q.Conditions, " AND "))
+	}
+	if q.OrderBy != "" {
+		b.WriteString(" ORDER BY ")
+		b.WriteString(q.OrderBy)
 	}
 	return b.String()
 }
