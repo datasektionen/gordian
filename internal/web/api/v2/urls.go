@@ -14,11 +14,10 @@ func RegisterRoutes(mux *http.ServeMux, databases web.Databases) {
 		panic(err)
 	}
 	h := handler.New(&handler.Config{
-		Schema:   &schema,
-		Pretty:   true,
-		GraphiQL: true,
+		Schema: &schema,
+		Pretty: true,
 	})
 
-	mux.Handle("/api/v2/graphql", h)
+	mux.Handle("/api/v2/graphql", RequireGET(GraphQLMiddleware(h)))
 
 }
