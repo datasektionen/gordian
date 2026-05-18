@@ -78,7 +78,7 @@ func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, per
 		return fmt.Errorf("failed to get simple budget line information from database: %v", err)
 	}
 
-	CCList, err := getCCList(databases.DBCF, selectedYear)
+	CCList, err := GetCCList(databases.DBCF, selectedYear)
 	if err != nil {
 		return fmt.Errorf("failed get scan CCList information from database: %v", err)
 	}
@@ -113,7 +113,7 @@ func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, per
 	return nil
 }
 
-func getCCList(db *sql.DB, year string) ([]string, error) {
+func GetCCList(db *sql.DB, year string) ([]string, error) {
 	var result *sql.Rows
 	var err error
 
@@ -164,12 +164,12 @@ func getCashflowLines(db *sql.DB, year string, cc string) ([]CashflowLine, error
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan cashflow line from query result: %v", err)
 		}
-		
+
 		// Decode HTML entities immediately when reading from database
 		cashflowLine.CashflowLineCostCentre = html.UnescapeString(cashflowLine.CashflowLineCostCentre)
 		cashflowLine.CashflowLineSecondaryCostCentre = html.UnescapeString(cashflowLine.CashflowLineSecondaryCostCentre)
 		cashflowLine.CashflowLineBudgetLine = html.UnescapeString(cashflowLine.CashflowLineBudgetLine)
-		
+
 		cashflowLines = append(cashflowLines, cashflowLine)
 	}
 	return cashflowLines, nil
@@ -243,7 +243,7 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 				break
 			}
 		}
-		
+
 		if !found {
 			// New budget line, append it
 			secCostCentre.BudgetLinesList = append(secCostCentre.BudgetLinesList, ReportBudgetLine{
@@ -314,7 +314,7 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			if selectedYear != currentYear || !showUnspent {
 				continue
 			}
-			
+
 			// Budget line doesn't exist yet (no cashflow entry), create it with zero total
 			secCostCentre.BudgetLinesList = append(secCostCentre.BudgetLinesList, ReportBudgetLine{
 				BudgetLineName: budgetLine.BudgetLineName,
@@ -341,11 +341,11 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 	for i := range costCentres {
 		// Properly capitalize cost centre name
 		costCentres[i].CostCentreName = properCapitalize(costCentres[i].CostCentreName)
-		
+
 		if costCentres[i].Budget == "0" {
 			costCentres[i].Budget = ""
 		}
-		
+
 		// Calculate remaining for cost centre
 		if selectedYear == currentYear && costCentres[i].Budget != "" {
 			remaining, isOverspent, err := calculateRemaining(costCentres[i].Budget, costCentres[i].Total)
@@ -354,7 +354,7 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 				costCentres[i].IsOverspent = isOverspent
 			}
 		}
-		
+
 		// Filter out empty secondary cost centres
 		filteredSecCostCentres := []ReportSecondaryCostCentreLine{}
 		for j := range costCentres[i].SecondaryCostCentresList {
@@ -362,14 +362,14 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 			if len(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList) == 0 {
 				continue
 			}
-			
+
 			// Properly capitalize secondary cost centre name
 			costCentres[i].SecondaryCostCentresList[j].SecondaryCostCentreName = properCapitalize(costCentres[i].SecondaryCostCentresList[j].SecondaryCostCentreName)
-			
+
 			if costCentres[i].SecondaryCostCentresList[j].Budget == "0" {
 				costCentres[i].SecondaryCostCentresList[j].Budget = ""
 			}
-			
+
 			// Calculate remaining for secondary cost centre
 			if selectedYear == currentYear && costCentres[i].SecondaryCostCentresList[j].Budget != "" {
 				remaining, isOverspent, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].Budget, costCentres[i].SecondaryCostCentresList[j].Total)
@@ -378,15 +378,15 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 					costCentres[i].SecondaryCostCentresList[j].IsOverspent = isOverspent
 				}
 			}
-			
+
 			for k := range costCentres[i].SecondaryCostCentresList[j].BudgetLinesList {
 				// Properly capitalize budget line name
 				costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].BudgetLineName = properCapitalize(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].BudgetLineName)
-				
+
 				if costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget == "0" {
 					costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget = ""
 				}
-				
+
 				// Calculate remaining for budget line
 				if selectedYear == currentYear && costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget != "" {
 					remaining, isOverspent, err := calculateRemaining(costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Budget, costCentres[i].SecondaryCostCentresList[j].BudgetLinesList[k].Total)
@@ -396,7 +396,7 @@ func StructureReportLines(cashflowLines []CashflowLine, simpleBudgetLines []Simp
 					}
 				}
 			}
-			
+
 			filteredSecCostCentres = append(filteredSecCostCentres, costCentres[i].SecondaryCostCentresList[j])
 		}
 		costCentres[i].SecondaryCostCentresList = filteredSecCostCentres
@@ -531,7 +531,7 @@ func formatNumber(value float64) string {
 }
 
 // List of acronyms that should never be lowercased
-var preservedAcronyms = []string{"DEMON", "SM", "(SM)", "DKM", "METAdorerna", "dÅre", "STUDS", "dJulkalendern", "EECS", "dFunk", "DJ", "dJubileet", "META", "DM", "dFunkteambuilding", "dFunklunch", "dFunköverlämning", "dFunkt", "TGT", "DESC", "TB", "VM", "PR", "BÜGG"," DSF", "HTC", "HTD", "RN", "NBF", "INQU", "INDA", "INEK", "TTG", "II", "LQ", "BLB", "SpexM", "MKM", "HLR", "DSF", "INAUG", "GUDAR", "dRama", "METAspexet"}
+var preservedAcronyms = []string{"DEMON", "SM", "(SM)", "DKM", "METAdorerna", "dÅre", "STUDS", "dJulkalendern", "EECS", "dFunk", "DJ", "dJubileet", "META", "DM", "dFunkteambuilding", "dFunklunch", "dFunköverlämning", "dFunkt", "TGT", "DESC", "TB", "VM", "PR", "BÜGG", " DSF", "HTC", "HTD", "RN", "NBF", "INQU", "INDA", "INEK", "TTG", "II", "LQ", "BLB", "SpexM", "MKM", "HLR", "DSF", "INAUG", "GUDAR", "dRama", "METAspexet"}
 
 // properCapitalize converts a string to title case (first letter uppercase, rest lowercase)
 // while preserving certain acronyms and special characters like Ø
@@ -566,7 +566,7 @@ func properCapitalize(s string) string {
 			delimiters := []string{"-", "/", "+", "&"}
 			hasDelimiter := false
 			var delimiter string
-			
+
 			for _, delim := range delimiters {
 				if strings.Contains(word, delim) {
 					hasDelimiter = true
@@ -574,7 +574,7 @@ func properCapitalize(s string) string {
 					break
 				}
 			}
-			
+
 			if hasDelimiter {
 				parts := strings.Split(word, delimiter)
 				for p, part := range parts {
@@ -608,15 +608,15 @@ func capitalizePart(s string) string {
 	if len(runes) == 0 {
 		return s
 	}
-	
+
 	// Special case: standalone "nø" should always be "nØ"
 	if len(runes) == 2 && unicode.ToLower(runes[0]) == 'n' && unicode.ToLower(runes[1]) == 'ø' {
 		return "nØ"
 	}
-	
+
 	result := make([]rune, len(runes))
 	result[0] = unicode.ToUpper(runes[0])
-	
+
 	for j := 1; j < len(runes); j++ {
 		// Handle special case: 'n' followed by 'ø' should be 'nØ'
 		if j > 0 && unicode.ToLower(runes[j-1]) == 'n' && unicode.ToLower(runes[j]) == 'ø' {
@@ -629,6 +629,6 @@ func capitalizePart(s string) string {
 			result[j] = unicode.ToLower(runes[j])
 		}
 	}
-	
+
 	return string(result)
 }

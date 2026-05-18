@@ -49,7 +49,7 @@ func getBudgetLinesByCostCentreID(db *sql.DB, costCentreID int) ([]excel.BudgetL
 	return budgetLines, nil
 }
 
-func getCostCentres(db *sql.DB) ([]excel.CostCentre, error) {
+func GetCostCentres(db *sql.DB) ([]excel.CostCentre, error) {
 	var costCentresGetStatementStatic = `SELECT id, name, type FROM cost_centres ORDER BY name`
 	result, err := db.Query(costCentresGetStatementStatic)
 	if err != nil {
@@ -79,7 +79,7 @@ func getCostCentreByID(db *sql.DB, costCentreID int) (excel.CostCentre, error) {
 	return costCentre, nil
 }
 
-func getSecondaryCostCentresByCostCentreID(db *sql.DB, costCentreID int) ([]excel.SecondaryCostCentre, error) {
+func GetSecondaryCostCentresByCostCentreID(db *sql.DB, costCentreID int) ([]excel.SecondaryCostCentre, error) {
 	var SecondaryCostCentresGetStatementStatic = `
 		SELECT 
     		id,
@@ -110,7 +110,7 @@ func getSecondaryCostCentresByCostCentreID(db *sql.DB, costCentreID int) ([]exce
 	return secondaryCostCentres, nil
 }
 
-func getBudgetLinesBySecondaryCostCentreID(db *sql.DB, secondaryCostCentreID int) ([]excel.BudgetLine, error) {
+func GetBudgetLinesBySecondaryCostCentreID(db *sql.DB, secondaryCostCentreID int) ([]excel.BudgetLine, error) {
 	var budgetLinesGetStatementStatic = `
 		SELECT 
     		id,
