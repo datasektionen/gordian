@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target=/root/.cache/go-build/ \
     CGO_ENABLED=0 go build -o /bin/server ./
 
-FROM alpine:${ALPINE_VERSION}
+FROM alpine:latest
 
 COPY --from=build /bin/server /bin/
 COPY --from=code /src/run.sh ./
