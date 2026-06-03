@@ -4,6 +4,10 @@ job "gordian" {
   type = "service"
 
   group "gordian" {
+    network {
+      port "http" {}
+    }
+
     service {
       name     = "gordian"
       port     = "http"
