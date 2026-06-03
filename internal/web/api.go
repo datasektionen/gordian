@@ -12,12 +12,12 @@ func apiCostCentresByYear(w http.ResponseWriter, r *http.Request, databases Data
 	if year == "" {
 		year = "Alla"
 	}
-	
+
 	costCentres, err := getCCList(databases.DBCF, year)
 	if err != nil {
 		return fmt.Errorf("failed to get cost centres for year %s: %v", year, err)
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(costCentres)
 	if err != nil {

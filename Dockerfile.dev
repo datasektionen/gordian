@@ -8,7 +8,7 @@ RUN apk add nginx
 WORKDIR /src
 
 COPY go.* ./
-COPY . . 
+COPY . .
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target=/root/.cache/go-build/ \

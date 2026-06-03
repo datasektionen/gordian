@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/datasektionen/GOrdian/internal/excel"
 	_ "github.com/lib/pq"
 )
