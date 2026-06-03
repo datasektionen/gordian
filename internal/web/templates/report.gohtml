@@ -37,7 +37,7 @@
             {{end}}
         </select>
     </div>
-    
+
     <div class="form-field">
         <label for="costCentreSelect" class="form-label">Resultatställe:</label>
         <select name="cc" id="costCentreSelect" class="form-select">
@@ -47,21 +47,21 @@
             {{end}}
         </select>
     </div>
-    
+
     <div class="form-field" id="unspentCheckboxContainer" {{if not (eq $.CurrentYear $.SelectedYear)}}style="display: none;"{{end}}>
         <label for="showUnspentCheck" class="form-label">
             <input type="checkbox" name="showUnspent" id="showUnspentCheck" value="true">
             Visa ospenderade budgetposter
         </label>
     </div>
-    
+
     <div class="form-field" id="overspentCheckboxContainer" {{if not (eq $.CurrentYear $.SelectedYear)}}style="display: none;"{{end}}>
         <label for="showOverspentCheck" class="form-label">
             <input type="checkbox" name="showOverspent" id="showOverspentCheck" value="true">
             Visa endast sprängda budgetposter
         </label>
     </div>
-    
+
     <button class="form-button">
         Visa
     </button>
@@ -69,7 +69,7 @@
 
 
 <div id="costCentre">
-    <div id="content">  
+    <div id="content">
         <table style="table-layout: fixed; width: 100%;">
             <tr style="background-color: rgb(176,190,197) !important;">
                 <th>Resultatställe</th>
@@ -123,11 +123,11 @@
                         {{end}}
                     {{end}}
                     <tr class="secondary-cost-centre-header {{if not $hasSpentLines}}unspent-section{{end}} {{if not $hasOverspentLines}}not-overspent-secondary{{end}}" style="background-color: rgb(207,216,220) !important;{{if not $hasSpentLines}} display: none;{{end}}">
-                        <th>  
+                        <th>
                             {{$ReportSecondaryCostCentreLine.SecondaryCostCentreName}}
                         </th>
-                        <th> 
-                            {{$ReportSecondaryCostCentreLine.Total}} kr          
+                        <th>
+                            {{$ReportSecondaryCostCentreLine.Total}} kr
                         </th>
                         {{if eq $.CurrentYear $.SelectedYear}}
                             <th class="hide-on-tiny-mobile">
@@ -148,10 +148,10 @@
                     </tr>
                     {{range $_, $ReportBudgetLine := $ReportSecondaryCostCentreLine.BudgetLinesList}}
                         <tr class="budget-line {{if and (eq $.CurrentYear $.SelectedYear) (or (eq $ReportBudgetLine.Total "0") (eq $ReportBudgetLine.Total "0,0") (eq $ReportBudgetLine.Total "0,00"))}}unspent-line{{end}} {{if not $hasSpentLines}}unspent-section{{end}} {{if not $ReportBudgetLine.IsOverspent}}not-overspent-line{{end}} {{if not $hasOverspentLines}}not-overspent-secondary{{end}}" {{if and (eq $.CurrentYear $.SelectedYear) (or (eq $ReportBudgetLine.Total "0") (eq $ReportBudgetLine.Total "0,0") (eq $ReportBudgetLine.Total "0,00"))}}style="display: none;"{{end}}>
-                            <td class="net">  
+                            <td class="net">
                                 {{$ReportBudgetLine.BudgetLineName}}
                             </td>
-                            <td class="net">  
+                            <td class="net">
                                 {{$ReportBudgetLine.Total}} kr
                             </td>
                             {{if eq $.CurrentYear $.SelectedYear}}
@@ -191,24 +191,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const showUnspentCheck = document.getElementById('showUnspentCheck');
     const reportForm = document.getElementById('reportForm');
     const currentYear = '{{$.CurrentYear}}';
-    
+
     // Show/hide checkbox based on year selection - removed, now always visible
     yearSelect.addEventListener('change', function() {
         const selectedYear = this.value;
-        
+
         // Fetch cost centres for the selected year
         fetch('/api/CostCentresByYear?year=' + encodeURIComponent(selectedYear))
             .then(response => response.json())
             .then(costCentres => {
                 // Clear existing options
                 costCentreSelect.innerHTML = '';
-                
+
                 // Add "Alla" option
                 const allaOption = document.createElement('option');
                 allaOption.value = 'Alla';
                 allaOption.textContent = 'Alla';
                 costCentreSelect.appendChild(allaOption);
-                
+
                 // Add cost centre options
                 costCentres.forEach(cc => {
                     const option = document.createElement('option');
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     option.textContent = cc;
                     costCentreSelect.appendChild(option);
                 });
-                
+
                 // Try to maintain the current selection if it still exists
                 const currentCostCentre = '{{$.SelectedCC}}';
                 const options = Array.from(costCentreSelect.options);
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 costCentreSelect.value = 'Alla';
             });
     });
-    
+
     // Toggle unspent budget lines visibility without reloading the page
     showUnspentCheck.addEventListener('change', function() {
         // Make mutually exclusive with overspent checkbox
@@ -245,10 +245,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Trigger overspent checkbox change to reset visibility
             showOverspentCheck.dispatchEvent(new Event('change'));
         }
-        
+
         const unspentLines = document.querySelectorAll('.unspent-line');
         const unspentSections = document.querySelectorAll('.unspent-section');
-        
+
         if (this.checked) {
             unspentLines.forEach(line => {
                 line.style.display = '';
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-    
+
     // Toggle to show only overspent budget lines
     const showOverspentCheck = document.getElementById('showOverspentCheck');
     showOverspentCheck.addEventListener('change', function() {
@@ -275,11 +275,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Trigger unspent checkbox change to reset visibility
             showUnspentCheck.dispatchEvent(new Event('change'));
         }
-        
+
         const notOverspentLines = document.querySelectorAll('.not-overspent-line');
         const notOverspentSecondaries = document.querySelectorAll('.not-overspent-secondary');
         const notOverspentCostCentres = document.querySelectorAll('.not-overspent-costcentre');
-        
+
         if (this.checked) {
             notOverspentLines.forEach(line => {
                 line.style.display = 'none';

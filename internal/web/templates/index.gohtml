@@ -33,7 +33,7 @@
         <div class="costCentre-group">
             <h2> Övrigt </h2>
            <div class="btn-group">
-                {{range $_,$other:= .others}} 
+                {{range $_,$other:= .others}}
                     <button onclick="location.href='/costcentre/{{$other.CostCentreID}}'"> {{$other.CostCentreName}} </button>
                 {{end}}
              </div>

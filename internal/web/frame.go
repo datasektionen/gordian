@@ -47,7 +47,7 @@ func framePage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 
 func getFrameLines(db *sql.DB) ([]excel.BudgetLine, error) {
 	var frameLinesGetStatementStatic = `
-		SELECT 
+		SELECT
     		SUM(income),
 			SUM(expense),
 			secondary_cost_centres.name ILIKE '%Internt%',

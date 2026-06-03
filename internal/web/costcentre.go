@@ -102,26 +102,26 @@ func sortSecondaryCostCentres(list []secondaryCostCentresWithBudgetLines) {
 	sort.SliceStable(list, func(i, j int) bool {
 		nameI := strings.ToLower(list[i].SecondaryCostCentreName)
 		nameJ := strings.ToLower(list[j].SecondaryCostCentreName)
-		
+
 		isExactInterntI := nameI == "internt"
 		isExactInterntJ := nameJ == "internt"
 		containsInterntI := strings.Contains(nameI, "internt")
 		containsInterntJ := strings.Contains(nameJ, "internt")
-		
+
 		if isExactInterntI && !isExactInterntJ {
 			return true
 		}
 		if !isExactInterntI && isExactInterntJ {
 			return false
 		}
-		
+
 		if containsInterntI && !containsInterntJ {
 			return true
 		}
 		if !containsInterntI && containsInterntJ {
 			return false
 		}
-		
+
 		return nameI < nameJ
 	})
 }

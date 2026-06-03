@@ -9,7 +9,7 @@ import (
 
 func getBudgetLinesByCostCentreID(db *sql.DB, costCentreID int) ([]excel.BudgetLine, error) {
 	var budgetLinesGetStatementStatic = `
-		SELECT 
+		SELECT
     		budget_lines.id,
     		budget_lines.name,
     		income,
@@ -81,7 +81,7 @@ func getCostCentreByID(db *sql.DB, costCentreID int) (excel.CostCentre, error) {
 
 func getSecondaryCostCentresByCostCentreID(db *sql.DB, costCentreID int) ([]excel.SecondaryCostCentre, error) {
 	var SecondaryCostCentresGetStatementStatic = `
-		SELECT 
+		SELECT
     		id,
     		name,
     		cost_centre_id
@@ -112,7 +112,7 @@ func getSecondaryCostCentresByCostCentreID(db *sql.DB, costCentreID int) ([]exce
 
 func getBudgetLinesBySecondaryCostCentreID(db *sql.DB, secondaryCostCentreID int) ([]excel.BudgetLine, error) {
 	var budgetLinesGetStatementStatic = `
-		SELECT 
+		SELECT
     		id,
     		name,
     		income,
