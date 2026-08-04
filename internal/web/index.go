@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/datasektionen/GOrdian/internal/excel"
 )
@@ -43,9 +44,9 @@ func indexPage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 	}
 
 	if darkeningValue {
-		for index, committeeCostCentre := range committeeCostCentres {
-			if committeeCostCentre.CostCentreName == "Mottagningen" {
-				committeeCostCentres = append(committeeCostCentres[:index], committeeCostCentres[index+1:]...)
+		for index, projectCostCentre := range projectCostCentres {
+			if strings.HasPrefix(projectCostCentre.CostCentreName, "Mottagningen") {
+				projectCostCentres = append(projectCostCentres[:index], projectCostCentres[index+1:]...)
 				break
 			}
 		}
