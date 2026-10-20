@@ -7,10 +7,12 @@ import (
 	"strconv"
 	"strings"
 
+	auth "github.com/datasektionen/GO-auth-yourself"
 	"github.com/datasektionen/GOrdian/internal/excel"
 )
 
-func costCentrePage(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error {
+func costCentrePage(w http.ResponseWriter, r *http.Request, databases Databases) error {
+	user, loggedIn := auth.FromContext(r.Context())
 	costCentreIDString := r.PathValue("costCentreIDPath")
 	costCentreIDInt, err := strconv.Atoi(costCentreIDString)
 	if err != nil {
@@ -63,7 +65,7 @@ func costCentrePage(w http.ResponseWriter, r *http.Request, databases Databases,
 		"costCentreTotalIncome":  costCentreTotalIncome,
 		"costCentreTotalExpense": costCentreTotalExpense,
 		"costCentreTotalResult":  costCentreTotalResult,
-		"permissions":            perms,
+		"auth":                   user,
 		"loggedIn":               loggedIn,
 	}); err != nil {
 		return fmt.Errorf("could not render template: %w", err)

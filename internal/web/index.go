@@ -8,10 +8,12 @@ import (
 	"strconv"
 	"strings"
 
+	auth "github.com/datasektionen/GO-auth-yourself"
 	"github.com/datasektionen/GOrdian/internal/excel"
 )
 
-func indexPage(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error {
+func indexPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
+	user, loggedIn := auth.FromContext(r.Context())
 	costCentres, err := getCostCentres(databases.DBGO)
 	if err != nil {
 		return fmt.Errorf("failed get scan cost centre information from database: %v", err)
@@ -54,13 +56,13 @@ func indexPage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 	//end of mörkläggning
 
 	if err := templates.ExecuteTemplate(w, "index.gohtml", map[string]any{
-		"motd":        motdGenerator(),
-		"committees":  committeeCostCentres,
-		"partitions":  partitionCostCentres,
-		"projects":    projectCostCentres,
-		"others":      otherCostCentres,
-		"permissions": perms,
-		"loggedIn":    loggedIn,
+		"motd":       motdGenerator(),
+		"committees": committeeCostCentres,
+		"partitions": partitionCostCentres,
+		"projects":   projectCostCentres,
+		"others":     otherCostCentres,
+		"auth":       user,
+		"loggedIn":   loggedIn,
 	}); err != nil {
 		return fmt.Errorf("could not render template: %w", err)
 	}

@@ -49,8 +49,9 @@ func main() {
 		log.Printf("error accessing Cashflow database: %v", err)
 	}
 
-	if err := web.Mount(http.DefaultServeMux, web.Databases{DBCF: dbCF, DBGO: dbGO}); err != nil {
+	handler, err := web.NewHandler(web.Databases{DBCF: dbCF, DBGO: dbGO})
+	if err != nil {
 		panic(err)
 	}
-	panic(http.ListenAndServe("0.0.0.0:"+config.GetEnv().ServerPort, nil))
+	panic(http.ListenAndServe("0.0.0.0:"+config.GetEnv().ServerPort, handler))
 }

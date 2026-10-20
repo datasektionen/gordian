@@ -34,14 +34,12 @@ SERVER_URL=https://budget.datasektionen.se
 {{ with nomadVar "nomad/jobs/gordian" }}
 GO_CONN=postgres://gordian:{{ .db_password }}@postgres.dsekt.internal:5432/gordian?sslmode=disable
 CF_CONN=postgres://gordian:{{ .db_password }}@postgres.dsekt.internal:5432/cashflow?sslmode=disable # cursed, should use API
-HIVE_TOKEN={{ .hive_token }}
 OIDC_CLIENT_SECRET={{ .oidc_client_secret }}
 APP_SECRET_KEY={{ .app_secret_key }}
 {{ end }}
 OIDC_PROVIDER=https://sso.datasektionen.se/op
 OIDC_CLIENT_ID=gordian
 OIDC_REDIRECT_URL=https://budget.datasektionen.se/auth/callback
-HIVE_URL=https://hive.datasektionen.se/api/v1
 ENV
         destination = "local/.env"
         env         = true
