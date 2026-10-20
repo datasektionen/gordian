@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	auth "github.com/datasektionen/GO-auth-yourself"
 )
 
 type SimpleBudgetLine struct {
@@ -63,7 +65,8 @@ func getYearsSince2017() []string {
 	return years
 }
 
-func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error {
+func reportPage(w http.ResponseWriter, r *http.Request, databases Databases) error {
+	user, loggedIn := auth.FromContext(r.Context())
 
 	currentYear := strconv.Itoa(time.Now().Year())
 	// currentYear := "2024"
@@ -99,7 +102,7 @@ func reportPage(w http.ResponseWriter, r *http.Request, databases Databases, per
 	if err := templates.ExecuteTemplate(w, "report.gohtml", map[string]any{
 		"motd":          motdGenerator(),
 		"cashflowLines": cashflowLines,
-		"permissions":   perms,
+		"auth":          user,
 		"loggedIn":      loggedIn,
 		"report":        structuredReport,
 		"CCList":        CCList,

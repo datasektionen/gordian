@@ -9,15 +9,13 @@ services:
     environment:
       - "GO_CONN=host=gordian-db port=5432 user=alexander password=kopis dbname=budget sslmode=disable"
       - "CF_CONN=host=cashflow-db port=5432 user=cashflow password=cashflow dbname=cashflow sslmode=disable"
-      - HIVE_URL=http://nyckeln:7004/api/v1
-      - HIVE_TOKEN=shmunguss
       - SERVER_PORT=3000
       - SERVER_URL=http://localhost:3000
       - OIDC_PROVIDER=http://localhost:7003
       - OIDC_CLIENT_ID=client-id
       - OIDC_CLIENT_SECRET=client-secret
       - OIDC_REDIRECT_URL=http://localhost:3000/auth/callback
-      - APP_SECRET_KEY=shmunguss
+      - APP_SECRET_KEY=development-secret-key-change-me-in-production-shmunguss
     depends_on:
       gordian-db:
         condition: service_healthy
@@ -69,7 +67,6 @@ services:
         target: /config.yaml
     ports:
       - 7003:7003
-      - 7004:7004
 
 configs:
   nginx.conf:

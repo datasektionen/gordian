@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	auth "github.com/datasektionen/GO-auth-yourself"
 	"github.com/datasektionen/GOrdian/internal/excel"
 )
 
@@ -17,7 +18,8 @@ type FrameLine struct {
 	FrameLineType     string
 }
 
-func framePage(w http.ResponseWriter, r *http.Request, databases Databases, perms []string, loggedIn bool) error {
+func framePage(w http.ResponseWriter, r *http.Request, databases Databases) error {
+	user, loggedIn := auth.FromContext(r.Context())
 	budgetLines, err := getFrameLines(databases.DBGO)
 	if err != nil {
 		return fmt.Errorf("failed get scan budget lines information from database: %v", err)
@@ -37,7 +39,7 @@ func framePage(w http.ResponseWriter, r *http.Request, databases Databases, perm
 		"sumpartitionframeline": sumPartitionFrameLine,
 		"sumprojectframeline":   sumProjectFrameLine,
 		"sumotherframeline":     sumOtherFrameLine,
-		"permissions":           perms,
+		"auth":                  user,
 		"loggedIn":              loggedIn,
 	}); err != nil {
 		return fmt.Errorf("could not render template: %w", err)

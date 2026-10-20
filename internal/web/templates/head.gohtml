@@ -41,7 +41,7 @@
                 str: "Tidigare Budgetar",
                 href: "/history",
             },
-            {{if sliceContains .permissions "admin" "view-all" }} {
+            {{if .auth.HasAnyPermission "admin" "view-all" }} {
                 str: "Administrera",
                 href: "/admin",
             }, {{end}}
