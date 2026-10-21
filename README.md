@@ -142,7 +142,7 @@ docker compose up --build --watch
 - To be able to see resultatrapport, you need to ask dsys for a database dump of cashflow and then write:
 
 ```sh
-docker compose exec -iT cashflow-db  pg_restore --no-owner -U cashflow -d cashflow -h localhost  < path/to/cashflow_dump.sql
+docker compose exec -iT cashflow-db  pg_restore --no-owner -U cashflow -d cashflow -h localhost  < path/to/cashflow.sql
 ```
 
 - ???
