@@ -122,7 +122,7 @@ func getCCList(db *sql.DB, year string) ([]string, error) {
 
 	result, err = db.Query(uniqueCCGetStatementStatic, year)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CCList from database: %v", err)
+		return nil, fmt.Errorf("failed to get CCList from database: %w", err)
 	}
 	defer result.Close()
 
@@ -135,9 +135,12 @@ func getCCList(db *sql.DB, year string) ([]string, error) {
 			&CC,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan CC from query result: %v", err)
+			return nil, fmt.Errorf("failed to scan CC from query result: %w", err)
 		}
 		CCList = append(CCList, CC)
+	}
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate CC query result: %w", err)
 	}
 	return CCList, nil
 }
@@ -149,7 +152,7 @@ func getCashflowLines(db *sql.DB, year string, cc string) ([]CashflowLine, error
 
 	result, err = db.Query(CombinedCashflowLinesGetStatementStatic, year, cc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get cashflow lines from database: %v", err)
+		return nil, fmt.Errorf("failed to get cashflow lines from database: %w", err)
 	}
 	defer result.Close()
 
@@ -165,7 +168,7 @@ func getCashflowLines(db *sql.DB, year string, cc string) ([]CashflowLine, error
 			&cashflowLine.CashflowLineTotal,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan cashflow line from query result: %v", err)
+			return nil, fmt.Errorf("failed to scan cashflow line from query result: %w", err)
 		}
 
 		// Decode HTML entities immediately when reading from database
@@ -174,6 +177,9 @@ func getCashflowLines(db *sql.DB, year string, cc string) ([]CashflowLine, error
 		cashflowLine.CashflowLineBudgetLine = html.UnescapeString(cashflowLine.CashflowLineBudgetLine)
 
 		cashflowLines = append(cashflowLines, cashflowLine)
+	}
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate cashflow line query result: %w", err)
 	}
 	return cashflowLines, nil
 }

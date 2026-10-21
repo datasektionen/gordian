@@ -27,6 +27,7 @@ func getBudgetLinesByCostCentreID(db *sql.DB, costCentreID int) ([]excel.BudgetL
 	if err != nil {
 		return nil, fmt.Errorf("failed to get budget lines from database: %v", err)
 	}
+	defer result.Close()
 	var budgetLines []excel.BudgetLine
 	for result.Next() {
 		var budgetLine excel.BudgetLine
@@ -46,6 +47,9 @@ func getBudgetLinesByCostCentreID(db *sql.DB, costCentreID int) ([]excel.BudgetL
 		}
 		budgetLines = append(budgetLines, budgetLine)
 	}
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate budget lines query result: %w", err)
+	}
 	return budgetLines, nil
 }
 
@@ -55,6 +59,7 @@ func getCostCentres(db *sql.DB) ([]excel.CostCentre, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cost centres from database: %v", err)
 	}
+	defer result.Close()
 	var costCentres []excel.CostCentre
 	for result.Next() {
 		var costCentre excel.CostCentre
@@ -64,6 +69,9 @@ func getCostCentres(db *sql.DB) ([]excel.CostCentre, error) {
 			return nil, fmt.Errorf("failed to scan cost centre from query result: %v", err)
 		}
 		costCentres = append(costCentres, costCentre)
+	}
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate cost centres query result: %w", err)
 	}
 	return costCentres, nil
 }
@@ -93,6 +101,7 @@ func getSecondaryCostCentresByCostCentreID(db *sql.DB, costCentreID int) ([]exce
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secondary cost centres from database: %v", err)
 	}
+	defer result.Close()
 	var secondaryCostCentres []excel.SecondaryCostCentre
 	for result.Next() {
 		var secondaryCostCentre excel.SecondaryCostCentre
@@ -106,6 +115,9 @@ func getSecondaryCostCentresByCostCentreID(db *sql.DB, costCentreID int) ([]exce
 			return nil, fmt.Errorf("failed to scan secondary cost centre from query result: %v", err)
 		}
 		secondaryCostCentres = append(secondaryCostCentres, secondaryCostCentre)
+	}
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate secondary cost centres query result: %w", err)
 	}
 	return secondaryCostCentres, nil
 }
@@ -128,6 +140,7 @@ func getBudgetLinesBySecondaryCostCentreID(db *sql.DB, secondaryCostCentreID int
 	if err != nil {
 		return nil, fmt.Errorf("failed to get budgetlines from database: %v", err)
 	}
+	defer result.Close()
 	var budgetLines []excel.BudgetLine
 	for result.Next() {
 		var budgetLine excel.BudgetLine
@@ -145,6 +158,9 @@ func getBudgetLinesBySecondaryCostCentreID(db *sql.DB, secondaryCostCentreID int
 			return nil, fmt.Errorf("failed to scan budget line from query result: %v", err)
 		}
 		budgetLines = append(budgetLines, budgetLine)
+	}
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate budget lines query result: %w", err)
 	}
 	return budgetLines, nil
 }
