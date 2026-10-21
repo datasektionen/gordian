@@ -66,6 +66,7 @@ func getFrameLines(db *sql.DB) ([]excel.BudgetLine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get framelines from database: %v", err)
 	}
+	defer result.Close()
 	var frameLines []excel.BudgetLine
 	for result.Next() {
 		var frameLine excel.BudgetLine
@@ -82,6 +83,9 @@ func getFrameLines(db *sql.DB) ([]excel.BudgetLine, error) {
 			return nil, fmt.Errorf("failed to scan budget line from query result: %v", err)
 		}
 		frameLines = append(frameLines, frameLine)
+	}
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate framelines query result: %w", err)
 	}
 	return frameLines, nil
 }
