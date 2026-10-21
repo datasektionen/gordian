@@ -12,22 +12,20 @@ var CombinedCashflowLinesGetStatementStatic = `
         ep.secondary_cost_centre,
         ep.budget_line,
         ep.amount,
-        EXTRACT(YEAR FROM ed.expense_date)::text AS date,  -- Cast to text
+        EXTRACT(YEAR FROM e.expense_date)::text AS date,  -- Cast to text
         e.description
-    FROM core_claimpart AS ep
-    INNER JOIN core_claim AS e ON ep.claim_id = e.id AND e.type = 'expense'
-	INNER JOIN expenses_expensedata AS ed ON ed.id = e.expense_data_id
+    FROM expenses_expensepart AS ep
+    INNER JOIN expenses_expense AS e ON ep.expense_id = e.id
     UNION ALL
     SELECT
         ip.cost_centre,
         ip.secondary_cost_centre,
         ip.budget_line,
         ip.amount,
-        EXTRACT(YEAR FROM COALESCE(id.invoice_date, id.paid_at))::text AS date,  -- Cast to text
+        EXTRACT(YEAR FROM COALESCE(i.invoice_date, i.payed_at))::text AS date,  -- Cast to text
         i.description
-    FROM core_claimpart AS ip
-    INNER JOIN core_claim AS i ON ip.claim_id = i.id AND i.type = 'invoice'
-	INNER JOIN invoices_invoicedata AS id ON id.id = i.invoice_data_id
+    FROM invoices_invoicepart AS ip
+    INNER JOIN invoices_invoice AS i ON ip.invoice_id = i.id
     ) AS combined
     WHERE (COALESCE($1, '') = '' OR $1 = 'Alla' OR date = $1)  -- Filter by year or allow 'Alla' as wildcard
       AND (COALESCE($2, '') = '' OR $2 = 'Alla' OR UPPER(cost_centre) = UPPER($2))  -- Filter by cost_centre or allow 'Alla' as wildcard
@@ -40,17 +38,15 @@ var uniqueCCGetStatementStatic = `
 	FROM (
 		SELECT
 			ep.cost_centre,
-			EXTRACT(YEAR FROM ed.expense_date)::text AS date
-		FROM core_claimpart AS ep
-		INNER JOIN core_claim AS c ON ep.claim_id = c.id
-		INNER JOIN expenses_expensedata AS ed ON ed.id = c.expense_data_id
+			EXTRACT(YEAR FROM e.expense_date)::text AS date
+		FROM expenses_expensepart AS ep
+		INNER JOIN expenses_expense AS e ON ep.expense_id = e.id
 		UNION
 		SELECT
 			ip.cost_centre,
-			EXTRACT(YEAR FROM COALESCE(id.invoice_date, id.paid_at))::text AS date
-		FROM core_claimpart AS ip
-		INNER JOIN core_claim AS i ON ip.claim_id = i.id
-		INNER JOIN invoices_invoicedata AS id ON id.id = i.invoice_data_id
+			EXTRACT(YEAR FROM COALESCE(i.invoice_date, i.payed_at))::text AS date
+		FROM invoices_invoicepart AS ip
+		INNER JOIN invoices_invoice AS i ON ip.invoice_id = i.id
 	) AS combined
 	WHERE (COALESCE($1, '') = '' OR $1 = 'Alla' OR date = $1)
 	ORDER BY UPPER(cost_centre);

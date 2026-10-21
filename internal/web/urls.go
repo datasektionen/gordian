@@ -29,9 +29,10 @@ var staticFiles embed.FS
 var templates *template.Template
 
 func NewHandler(databases Databases) (http.Handler, error) {
-	authenticator, err := auth.New(context.Background(), auth.ConfigFromEnv())
+	authConfig := auth.ConfigFromEnv()
+	authenticator, err := auth.New(context.Background(), authConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize auth: %w", err)
+		return nil, fmt.Errorf("failed to initialize auth (APP_SECRET_KEY: %d bytes): %w", len(authConfig.SecretKey), err)
 	}
 
 	templates, err = template.New("").Funcs(map[string]any{"formatMoney": formatMoney, "add": add}).ParseFS(templatesFS, "templates/*.gohtml")
